@@ -186,7 +186,19 @@ async def get_fleet_summary(request: Request):
     supabase_service = request.app.state.supabase_service
     
     if not supabase_service.is_configured():
-        raise HTTPException(status_code=503, detail="Database not configured")
+        # Return sample data when database is not configured
+        return {
+            "total_drivers": 5,
+            "total_trips": 120,
+            "fleet_avg_score": 7.5,
+            "safest_driver": "John Doe",
+            "safest_driver_score": 9.2,
+            "most_improved_driver": "Jane Smith",
+            "most_improved_score": 8.1,
+            "high_performers": 2,
+            "average_performers": 2,
+            "low_performers": 1
+        }
     
     try:
         summary = await supabase_service.get_fleet_summary()
@@ -195,14 +207,89 @@ async def get_fleet_summary(request: Request):
         raise HTTPException(status_code=500, detail=f"Error getting fleet summary: {str(e)}")
 
 @router.get("/fleet/drivers")
-async def get_fleet_drivers(request: Request):
+async def get_fleet_drivers(request: Request, include_feedback: bool = False):
     """
     Get list of all drivers with their statistics and rankings
+    
+    Args:
+        include_feedback: If True, generates AI feedback for each driver (slower but more complete)
     """
     supabase_service = request.app.state.supabase_service
+    ml_service = request.app.state.ml_service
     
     if not supabase_service.is_configured():
-        raise HTTPException(status_code=503, detail="Database not configured")
+        # Return sample data when database is not configured
+        sample_drivers = [
+            {
+                "driver_id": "DRV001",
+                "driver_name": "John Doe",
+                "avg_score": 9.2,
+                "trip_count": 45,
+                "best_score": 9.8,
+                "worst_score": 8.5,
+                "last_trip_date": "2024-01-15T10:30:00",
+                "avg_speed": 62.5,
+                "avg_acceleration": 1.2,
+                "avg_braking": 0.3,
+                "rank": 1
+            },
+            {
+                "driver_id": "DRV002",
+                "driver_name": "Jane Smith",
+                "avg_score": 8.1,
+                "trip_count": 38,
+                "best_score": 9.0,
+                "worst_score": 6.8,
+                "last_trip_date": "2024-01-14T15:20:00",
+                "avg_speed": 65.2,
+                "avg_acceleration": 1.5,
+                "avg_braking": 0.4,
+                "rank": 2
+            },
+            {
+                "driver_id": "DRV003",
+                "driver_name": "Bob Johnson",
+                "avg_score": 7.5,
+                "trip_count": 52,
+                "best_score": 8.2,
+                "worst_score": 6.5,
+                "last_trip_date": "2024-01-15T09:45:00",
+                "avg_speed": 68.0,
+                "avg_acceleration": 1.8,
+                "avg_braking": 0.5,
+                "rank": 3
+            },
+            {
+                "driver_id": "DRV004",
+                "driver_name": "Alice Brown",
+                "avg_score": 6.8,
+                "trip_count": 29,
+                "best_score": 7.5,
+                "worst_score": 5.8,
+                "last_trip_date": "2024-01-13T14:10:00",
+                "avg_speed": 70.5,
+                "avg_acceleration": 2.1,
+                "avg_braking": 0.6,
+                "rank": 4
+            },
+            {
+                "driver_id": "DRV005",
+                "driver_name": "Charlie Davis",
+                "avg_score": 5.9,
+                "trip_count": 31,
+                "best_score": 6.9,
+                "worst_score": 4.8,
+                "last_trip_date": "2024-01-12T11:30:00",
+                "avg_speed": 75.0,
+                "avg_acceleration": 2.5,
+                "avg_braking": 0.7,
+                "rank": 5
+            }
+        ]
+        return {
+            "drivers": sample_drivers,
+            "total_count": len(sample_drivers)
+        }
     
     try:
         driver_stats = await supabase_service.get_driver_stats()
@@ -212,6 +299,15 @@ async def get_fleet_drivers(request: Request):
         
         for idx, driver in enumerate(driver_stats, start=1):
             driver['rank'] = idx
+            
+            # Optionally include AI feedback for each driver
+            if include_feedback:
+                try:
+                    feedback = await ml_service.generate_driver_feedback(driver)
+                    driver['ai_feedback'] = feedback
+                except Exception as e:
+                    print(f"Failed to generate feedback for driver {driver.get('driver_id')}: {e}")
+                    driver['ai_feedback'] = None
         
         return {
             "drivers": driver_stats,
@@ -259,7 +355,68 @@ async def generate_driver_feedback(driver_id: str, request: Request):
     ml_service = request.app.state.ml_service
     
     if not supabase_service.is_configured():
-        raise HTTPException(status_code=503, detail="Database not configured")
+        # Use sample data when database is not configured
+        sample_drivers = {
+            "DRV001": {
+                "driver_id": "DRV001",
+                "driver_name": "John Doe",
+                "avg_score": 9.2,
+                "trip_count": 45,
+                "avg_speed": 62.5,
+                "avg_acceleration": 1.2,
+                "avg_braking": 0.3
+            },
+            "DRV002": {
+                "driver_id": "DRV002",
+                "driver_name": "Jane Smith",
+                "avg_score": 8.1,
+                "trip_count": 38,
+                "avg_speed": 65.2,
+                "avg_acceleration": 1.5,
+                "avg_braking": 0.4
+            },
+            "DRV003": {
+                "driver_id": "DRV003",
+                "driver_name": "Bob Johnson",
+                "avg_score": 7.5,
+                "trip_count": 52,
+                "avg_speed": 68.0,
+                "avg_acceleration": 1.8,
+                "avg_braking": 0.5
+            },
+            "DRV004": {
+                "driver_id": "DRV004",
+                "driver_name": "Alice Brown",
+                "avg_score": 6.8,
+                "trip_count": 29,
+                "avg_speed": 70.5,
+                "avg_acceleration": 2.1,
+                "avg_braking": 0.6
+            },
+            "DRV005": {
+                "driver_id": "DRV005",
+                "driver_name": "Charlie Davis",
+                "avg_score": 5.9,
+                "trip_count": 31,
+                "avg_speed": 75.0,
+                "avg_acceleration": 2.5,
+                "avg_braking": 0.7
+            }
+        }
+        
+        if driver_id not in sample_drivers:
+            raise HTTPException(status_code=404, detail="Driver not found")
+        
+        driver_stats = sample_drivers[driver_id]
+        feedback = await ml_service.generate_driver_feedback(driver_stats)
+        
+        return {
+            "driver_id": driver_id,
+            "driver_name": driver_stats.get('driver_name', driver_id),
+            "feedback": feedback,
+            "score": driver_stats.get('avg_score', 0),
+            "timestamp": datetime.utcnow()
+        }
     
     try:
         # Get driver statistics
@@ -294,7 +451,30 @@ async def get_fleet_insights(request: Request):
     ml_service = request.app.state.ml_service
     
     if not supabase_service.is_configured():
-        raise HTTPException(status_code=503, detail="Database not configured")
+        # Return sample insights when database is not configured
+        sample_summary = {
+            "total_drivers": 5,
+            "total_trips": 120,
+            "fleet_avg_score": 7.5,
+            "safest_driver": "John Doe",
+            "safest_driver_score": 9.2
+        }
+        sample_drivers = [
+            {"driver_id": "DRV001", "avg_score": 9.2},
+            {"driver_id": "DRV002", "avg_score": 8.1},
+            {"driver_id": "DRV003", "avg_score": 7.5},
+            {"driver_id": "DRV004", "avg_score": 6.8},
+            {"driver_id": "DRV005", "avg_score": 5.9}
+        ]
+        
+        # Generate insights even with sample data
+        insights = await ml_service.generate_fleet_insights(sample_summary, sample_drivers)
+        
+        return {
+            "insights": insights,
+            "timestamp": datetime.utcnow(),
+            "fleet_summary": sample_summary
+        }
     
     try:
         # Get fleet summary and driver stats

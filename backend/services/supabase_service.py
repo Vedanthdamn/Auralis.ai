@@ -289,22 +289,51 @@ class SupabaseService:
                     'total_trips': 0,
                     'fleet_avg_score': 0,
                     'safest_driver': None,
-                    'safest_driver_score': None
+                    'safest_driver_score': None,
+                    'most_improved_driver': None,
+                    'most_improved_score': None,
+                    'high_performers': 0,
+                    'average_performers': 0,
+                    'low_performers': 0
                 }
             
             total_drivers = len(driver_stats)
             total_trips = sum(stat.get('trip_count', 0) for stat in driver_stats)
             fleet_avg_score = sum(stat.get('avg_score', 0) for stat in driver_stats) / total_drivers
             
+            # Categorize drivers by performance
+            high_performers = len([d for d in driver_stats if d.get('avg_score', 0) >= 8])
+            average_performers = len([d for d in driver_stats if 5 <= d.get('avg_score', 0) < 8])
+            low_performers = len([d for d in driver_stats if d.get('avg_score', 0) < 5])
+            
             # Find safest driver
             safest = max(driver_stats, key=lambda x: x.get('avg_score', 0))
+            
+            # Find most improved driver (simplified - uses best_score - avg_score as improvement indicator)
+            # In a real scenario, this would compare historical data over time
+            most_improved = None
+            max_improvement = 0
+            
+            for driver in driver_stats:
+                best = driver.get('best_score', 0)
+                worst = driver.get('worst_score', 0)
+                if best and worst:
+                    improvement = best - worst
+                    if improvement > max_improvement:
+                        max_improvement = improvement
+                        most_improved = driver
             
             return {
                 'total_drivers': total_drivers,
                 'total_trips': total_trips,
                 'fleet_avg_score': round(fleet_avg_score, 2),
                 'safest_driver': safest.get('driver_name') or safest.get('driver_id'),
-                'safest_driver_score': safest.get('avg_score')
+                'safest_driver_score': safest.get('avg_score'),
+                'most_improved_driver': most_improved.get('driver_name') or most_improved.get('driver_id') if most_improved else None,
+                'most_improved_score': most_improved.get('avg_score') if most_improved else None,
+                'high_performers': high_performers,
+                'average_performers': average_performers,
+                'low_performers': low_performers
             }
         except Exception as e:
             print(f"Error getting fleet summary: {e}")
