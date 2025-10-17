@@ -130,18 +130,21 @@ Generates AI-powered feedback for a specific driver.
 The API uses Ollama with the following model priority:
 
 1. **Primary Model**: `mistral:7b-instruct-q4_0`
-   - Model ID: b17615239298
-   - Size: 4.1 GB
+   - Quantized 4-bit version (~4.1 GB)
    - Optimized for instruction following
+   - Best balance of quality and performance
 
 2. **Fallback Model**: `mistral:latest`
-   - Model ID: 6577803aa9a0
    - Latest stable Mistral release
+   - Falls back if q4_0 variant not available
 
 3. **Final Fallback**: `mistral`
    - Generic Mistral model tag
+   - Catches any available Mistral variant
 
 If all Ollama models fail, the system falls back to rule-based feedback generation.
+
+**Note**: Model digests (e.g., b17615239298) may vary based on your Ollama installation. The system automatically uses whichever variant is available from the priority list above.
 
 ### Rule-Based Fallback
 When AI models are unavailable, the system generates feedback using:

@@ -9,12 +9,14 @@ This document summarizes the changes made to implement comprehensive fleet dashb
 
 #### Mistral Model Integration
 - Updated `_generate_ollama_driver_feedback()` to use model priority:
-  1. `mistral:7b-instruct-q4_0` (ID: b17615239298, 4.1 GB) - Primary model
-  2. `mistral:latest` (ID: 6577803aa9a0) - First fallback
+  1. `mistral:7b-instruct-q4_0` - Primary model (quantized 4-bit, ~4.1 GB)
+  2. `mistral:latest` - First fallback (latest stable release)
   3. `mistral` - Generic fallback
 - Added robust error handling with automatic fallback between models
 - Same model priority applied to `_generate_ollama_fleet_insights()`
 - Maintains rule-based feedback generation as final fallback
+
+Note: The model IDs (b17615239298, 6577803aa9a0) are example digests that may vary based on your Ollama installation. The system will automatically use whichever variant is available.
 
 #### Key Features
 - **Model Fallback**: Automatically tries multiple model variants
