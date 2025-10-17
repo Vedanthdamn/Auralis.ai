@@ -1,7 +1,7 @@
 import { Gauge, Zap, AlertTriangle, Wind } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-function StatsCards({ drivingData, isConnected }) {
+function StatsCards({ drivingData }) {
   const stats = [
     {
       label: 'Current Speed',

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Dashboard from './components/Dashboard'
 import Header from './components/Header'
+import Welcome from './components/Welcome'
+import Login from './components/Login'
 import { useDarkMode } from './hooks/useDarkMode'
 import { useWebSocket } from './hooks/useWebSocket'
 
-function App() {
+function DashboardPage() {
   const [darkMode, setDarkMode] = useDarkMode()
   const [drivingData, setDrivingData] = useState(null)
   const [score, setScore] = useState(null)
@@ -13,7 +16,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false)
   
   // WebSocket connection for real-time data
-  const { sendMessage, lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws')
+  const { lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws')
   
   useEffect(() => {
     setIsConnected(connectionStatus === 'connected')
@@ -55,10 +58,26 @@ function App() {
             drivingData={drivingData}
             score={score}
             feedback={feedback}
-            isConnected={isConnected}
           />
         </motion.main>
       </div>
+    </div>
+  )
+}
+
+function App() {
+  const [darkMode] = useDarkMode()
+  
+  return (
+    <div className={darkMode ? 'dark' : ''}>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Welcome />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
     </div>
   )
 }
