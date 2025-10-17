@@ -35,6 +35,7 @@ function DriverCard({ driver, rankBadge, isExpanded, onToggle }) {
     if (isExpanded && !feedback && !loadingFeedback) {
       fetchDriverFeedback()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExpanded])
   
   const fetchDriverFeedback = async () => {

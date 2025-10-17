@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { Lightbulb, TrendingUp, AlertCircle } from 'lucide-react'
 
 function FleetInsights({ insights, summary }) {

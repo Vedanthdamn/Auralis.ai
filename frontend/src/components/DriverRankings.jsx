@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Trophy, TrendingUp, Calendar, RefreshCw } from 'lucide-react'
+import { Trophy, RefreshCw } from 'lucide-react'
 import DriverCard from './DriverCard'
 
 function DriverRankings({ drivers, onRefresh }) {
