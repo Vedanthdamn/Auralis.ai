@@ -36,8 +36,20 @@ class MLService:
         try:
             if os.path.exists(self.model_path):
                 with open(self.model_path, 'rb') as f:
-                    self.model = pickle.load(f)
-                print(f"✅ ML model loaded from {self.model_path}")
+                    loaded_data = pickle.load(f)
+                
+                # Handle both dictionary format (from train_model.py) and direct model format
+                if isinstance(loaded_data, dict):
+                    # Dictionary format with 'model' key
+                    if 'model' in loaded_data:
+                        self.model = loaded_data['model']
+                        print(f"✅ ML model loaded from {self.model_path} (type: {loaded_data.get('type', 'unknown')})")
+                    else:
+                        print(f"⚠️ Invalid model format in {self.model_path}. Using rule-based scoring.")
+                else:
+                    # Direct model object
+                    self.model = loaded_data
+                    print(f"✅ ML model loaded from {self.model_path}")
             else:
                 print(f"⚠️ Model file not found at {self.model_path}. Using rule-based scoring.")
         except Exception as e:
