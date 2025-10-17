@@ -194,7 +194,10 @@ async def get_fleet_summary(request: Request):
             "safest_driver": "John Doe",
             "safest_driver_score": 9.2,
             "most_improved_driver": "Jane Smith",
-            "most_improved_score": 8.1
+            "most_improved_score": 8.1,
+            "high_performers": 2,
+            "average_performers": 2,
+            "low_performers": 1
         }
     
     try:
