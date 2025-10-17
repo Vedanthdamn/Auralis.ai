@@ -104,6 +104,9 @@ Perfect for:
 - 🎭 Multiple driving scenarios (normal, highway, aggressive, cautious, emergency)
 - 📡 Real-time telemetry transmission to backend
 - ⚙️ Configurable parameters
+- 🚕 **NEW**: Dual simulation modes (personal and fleet) that run independently
+- 🔄 **NEW**: Concurrent simulation support - run multiple terminals simultaneously
+- ⚡ **NEW**: Optimized for 1-second update intervals without timeouts
 
 ---
 
@@ -222,11 +225,19 @@ cd frontend
 npm run dev
 ```
 
-#### Terminal 3: Run Simulation
+#### Terminal 3: Run Personal Simulation
 ```bash
 cd simulation
-python drive_simulator.py --duration 300 --interval 1.0
+python drive_simulator.py --duration 300 --interval 1.0 --mode personal
 ```
+
+#### Terminal 4 (Optional): Run Fleet Simulation
+```bash
+cd simulation
+python drive_simulator.py --duration 300 --interval 1.0 --mode fleet
+```
+
+**Note**: You can run multiple simulators simultaneously! Each terminal runs independently without interfering with the other.
 
 ### Access the Dashboards
 
@@ -264,6 +275,68 @@ python generate_fleet_data.py --drivers 5 --sessions 10
 ```
 
 This will create 5 sample drivers with 10 trips each to populate the fleet dashboard.
+
+---
+
+## 🚗 Simulation Modes
+
+DriveMind.ai now supports two independent simulation modes that can run concurrently:
+
+### Personal Mode (`--mode personal`)
+- **Purpose**: Individual driver testing and training
+- **Use Case**: Personal driving improvement, training scenarios
+- **Icon**: 🚗
+- **WebSocket Channel**: Broadcasts with `mode: "personal"`
+
+### Fleet Mode (`--mode fleet`)
+- **Purpose**: Fleet management and multi-vehicle monitoring
+- **Use Case**: Fleet operators (Uber, Ola, delivery services)
+- **Icon**: 🚕
+- **WebSocket Channel**: Broadcasts with `mode: "fleet"`
+
+### Running Multiple Simulations
+
+You can run both modes simultaneously in different terminals:
+
+```bash
+# Terminal 1: Backend
+cd backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2: Personal Simulation
+cd simulation
+python drive_simulator.py --duration 600 --interval 1.0 --mode personal
+
+# Terminal 3: Fleet Simulation
+cd simulation
+python drive_simulator.py --duration 600 --interval 1.0 --mode fleet
+
+# Terminal 4: Frontend
+cd frontend
+npm run dev
+```
+
+### Simulator Options
+
+```bash
+python drive_simulator.py [OPTIONS]
+
+Options:
+  --duration SECONDS    Simulation duration (default: 300)
+  --interval SECONDS    Data update interval (default: 1.0)
+  --mode MODE          Simulation mode: personal or fleet (default: personal)
+  --api-url URL        Backend API URL (default: http://localhost:8000/api)
+```
+
+**📚 For detailed simulation guide, troubleshooting, and advanced usage, see [SIMULATION_GUIDE.md](SIMULATION_GUIDE.md)**
+
+### Performance Optimizations
+
+- **Async Endpoints**: All data endpoints are asynchronous for high throughput
+- **Non-Blocking WebSocket**: WebSocket connections don't block HTTP requests
+- **Error Recovery**: Automatic fallback to rule-based scoring if ML model fails
+- **Timeout Handling**: 5-second timeout for API requests with graceful degradation
+- **Concurrent Support**: Handle multiple 1-second interval requests without timeouts
 
 ---
 
@@ -382,6 +455,67 @@ The system will automatically use the configured model for:
 - Personal dashboard feedback
 - Per-driver performance analysis (fleet)
 - Fleet-level insights and recommendations
+
+---
+
+## 🔧 Backend Improvements
+
+### Enhanced Error Handling
+
+The backend now includes robust error handling for common issues:
+
+1. **ML Model Loading**
+   - Graceful fallback to rule-based scoring if model file is missing
+   - Handles pickle import errors (e.g., missing classes)
+   - Clear console messages indicating which scoring method is active
+
+2. **Score Calculation**
+   - Try/except wrapper around all score calculations
+   - Returns fallback score (5.0) if calculation fails
+   - Never crashes due to NoneType errors
+
+3. **Persistent Scoring Object**
+   - ML service initialized at startup (during lifespan)
+   - Prevents 'NoneType' errors in calculate_score
+   - Available throughout application lifetime via `app.state.ml_service`
+
+4. **Async Optimization**
+   - All data endpoints use `async def` for better concurrency
+   - WebSocket endpoint doesn't block HTTP requests
+   - Handles multiple simulator connections at 1-second intervals
+   - Broadcasting to WebSocket clients runs in background tasks
+
+### WebSocket Enhancements
+
+- **Concurrent Client Support**: Handle multiple dashboards simultaneously
+- **Mode Filtering**: Broadcasts include `mode` field for filtering by personal/fleet
+- **Automatic Cleanup**: Disconnected clients are automatically removed
+- **Error Resilience**: Failed broadcasts don't crash the connection manager
+
+### API Response Format
+
+All `/api/driving_data` responses now include:
+```json
+{
+  "score": 8.5,
+  "timestamp": "2025-10-17T20:30:00.000000",
+  "confidence": 0.95
+}
+```
+
+WebSocket broadcasts include mode context:
+```json
+{
+  "type": "driving_data",
+  "mode": "personal",
+  "payload": {
+    "speed": 60.5,
+    "acceleration": 0.5,
+    "scenario": "normal",
+    "score": 8.5
+  }
+}
+```
 
 ---
 

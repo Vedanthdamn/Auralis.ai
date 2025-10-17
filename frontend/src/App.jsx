@@ -27,12 +27,17 @@ function DashboardPage() {
     if (lastMessage) {
       try {
         const data = JSON.parse(lastMessage)
-        if (data.type === 'driving_data') {
-          setDrivingData(data.payload)
-        } else if (data.type === 'score_update') {
-          setScore(data.payload.score)
-        } else if (data.type === 'feedback') {
-          setFeedback(data.payload.feedback)
+        // Filter to only show personal mode data (or data without mode specified for backward compatibility)
+        const isPersonalMode = !data.mode || data.mode === 'personal'
+        
+        if (isPersonalMode) {
+          if (data.type === 'driving_data') {
+            setDrivingData(data.payload)
+          } else if (data.type === 'score_update') {
+            setScore(data.payload.score)
+          } else if (data.type === 'feedback') {
+            setFeedback(data.payload.feedback)
+          }
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error)
@@ -69,6 +74,33 @@ function DashboardPage() {
 
 function FleetDashboardPage() {
   const [darkMode, setDarkMode] = useDarkMode()
+  const [fleetData, setFleetData] = useState(null)
+  const [isConnected, setIsConnected] = useState(false)
+  
+  // WebSocket connection for real-time fleet data
+  const { lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws')
+  
+  useEffect(() => {
+    setIsConnected(connectionStatus === 'connected')
+  }, [connectionStatus])
+  
+  useEffect(() => {
+    if (lastMessage) {
+      try {
+        const data = JSON.parse(lastMessage)
+        // Filter to only show fleet mode data
+        const isFleetMode = data.mode === 'fleet'
+        
+        if (isFleetMode) {
+          if (data.type === 'driving_data') {
+            setFleetData(data.payload)
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error)
+      }
+    }
+  }, [lastMessage])
   
   return (
     <div className={darkMode ? 'dark' : ''}>
@@ -76,7 +108,7 @@ function FleetDashboardPage() {
         <Header 
           darkMode={darkMode} 
           setDarkMode={setDarkMode}
-          isConnected={false}
+          isConnected={isConnected}
           showFleetLink={true}
         />
         
@@ -86,7 +118,7 @@ function FleetDashboardPage() {
           transition={{ duration: 0.5 }}
           className="container mx-auto px-4 py-8"
         >
-          <FleetDashboard />
+          <FleetDashboard fleetData={fleetData} />
         </motion.main>
       </div>
     </div>
