@@ -171,7 +171,8 @@ The simulator automatically cycles through realistic driving scenarios:
 ### Status Indicators
 
 - ✅ **Green check**: Request successful, score received
-- ⚠️ **Warning**: No response from backend
+- ⚠️ **Warning**: No response from backend (after retries)
+- ⏳ **Hourglass**: Retrying request with exponential backoff
 - 📍 **Pin**: Scenario change notification
 
 ## Performance Characteristics
@@ -181,7 +182,47 @@ The simulator automatically cycles through realistic driving scenarios:
 - **Async Endpoints**: All endpoints use `async def` for high concurrency
 - **Non-Blocking WebSocket**: WebSocket connections don't block HTTP requests
 - **Error Recovery**: Automatic fallback to rule-based scoring if ML model fails
-- **Timeout Handling**: 5-second timeout with graceful degradation
+- **Timeout Handling**: 10-second timeout with graceful degradation (increased from 5s)
+- **Concurrency Control**: Semaphore-based rate limiting (10 concurrent requests)
+- **Partial Responses**: Returns score 5.0 with confidence 0.5 when overloaded
+- **Session Tracking**: Each simulation run gets unique UUID for independent tracking
+
+### Retry Mechanism (NEW)
+
+The simulator now automatically retries failed requests with exponential backoff:
+
+- **Retry Attempts**: 3 maximum retries per request
+- **Backoff Strategy**: 0.5s → 1.0s → 2.0s between attempts
+- **Retry Triggers**: Connection errors, timeouts, HTTP 503 (backend busy)
+- **Console Feedback**: Shows retry attempts and delays
+
+Example output:
+```
+⏳ Request timeout, retrying in 0.5s (attempt 1/3)...
+⏳ Request timeout, retrying in 1.0s (attempt 2/3)...
+❌ Request timeout after 3 attempts
+```
+
+### Session Statistics (NEW)
+
+Each simulation run tracks its own statistics:
+
+- **Session ID**: Unique UUID for each run
+- **Running Average**: Displayed on every update
+- **Session Summary**: Shows at completion
+
+Example output:
+```
+🚗 [PERSONAL] Speed:  60.5 km/h | ... | Score: 8.5/10 | Avg: 8.3/10 ✅
+
+==================================================
+✅ PERSONAL Simulation complete!
+Session ID: 550e8400-e29b-41d4-a716-446655440000
+Total updates: 42
+Average score: 8.34/10
+Best score: 9.50/10
+Worst score: 6.20/10
+```
 
 ### Recommended Settings
 
@@ -217,10 +258,40 @@ curl http://localhost:8000/health
 ```
 
 #### Problem: Timeout errors
-**Solution**: Increase interval or check backend logs
+**Solution**: The simulator now auto-retries with exponential backoff. If retries fail:
+1. Check if backend is running
+2. Increase interval to reduce request frequency:
 ```bash
 python drive_simulator.py --interval 2.0  # Slower updates
 ```
+3. Check backend logs for errors
+4. Verify backend isn't overloaded (check CPU usage)
+
+#### Problem: Multiple retry attempts shown
+**Cause**: Backend is temporarily overloaded or network is slow
+**Solution**: This is normal behavior. The simulator will continue retrying automatically.
+- Retry delays: 0.5s, 1.0s, 2.0s
+- Maximum 3 attempts per request
+- If all retries fail, request is skipped and simulation continues
+
+### Backend Overload
+
+#### Problem: Backend returns partial responses (confidence < 0.95)
+**Cause**: Backend is processing too many concurrent requests (>10)
+**Solution**: 
+1. Reduce number of concurrent simulators
+2. Increase update interval: `--interval 2.0`
+3. Increase `MAX_CONCURRENT_REQUESTS` in `backend/main.py`:
+```python
+MAX_CONCURRENT_REQUESTS = 20  # Increase from 10
+```
+
+#### Problem: High response times (>1s)
+**Cause**: Backend is busy processing multiple requests
+**Solution**:
+1. Check CPU usage on backend server
+2. Ensure ML model is loaded (check startup logs)
+3. Consider optimizing ML model or using rule-based scoring only
 
 ### Backend Issues
 
