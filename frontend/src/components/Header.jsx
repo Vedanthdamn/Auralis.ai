@@ -17,7 +17,7 @@ function Header({ darkMode, setDarkMode, isConnected }) {
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-                DriveMind.ai
+                Auralis.ai
               </h1>
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 AI-Powered Driver Safety Scoring
