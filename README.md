@@ -11,6 +11,16 @@ Illuminating Safer Journeys with AI
 
 ---
 
+> **🔧 Python 3.13 Installation Fixed!**
+> 
+> We've resolved the dependency conflicts. Installation now works smoothly on Python 3.12 and 3.13!
+> 
+> **Quick Start:** [PYTHON_313_QUICK_START.md](PYTHON_313_QUICK_START.md)
+> 
+> **Full Guide:** [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
+
+---
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
@@ -121,7 +131,11 @@ Perfect for:
 
 ## 🚀 Installation
 
-> **⚠️ Important:** If you're experiencing dependency conflicts with numpy and TensorFlow, please see [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for the complete solution. We've updated numpy to 2.0.2 for full Python 3.12/3.13 compatibility.
+> **🎉 Python 3.13 Users:** Installation issues are **FIXED**! See [PYTHON_313_QUICK_START.md](PYTHON_313_QUICK_START.md) for the quick guide.
+> 
+> **📚 Comprehensive Guide:** For detailed installation instructions and troubleshooting, see [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md).
+> 
+> **Key Fix:** Updated numpy to 2.0.2 for full Python 3.12/3.13 compatibility with TensorFlow 2.18.0.
 
 ### 1. Clone the Repository
 

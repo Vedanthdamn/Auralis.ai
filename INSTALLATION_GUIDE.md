@@ -113,7 +113,16 @@ npm install
 
 ## ✅ Verify Installation
 
-### Test Python Packages
+### Quick Verification (Recommended)
+```bash
+cd /home/runner/work/Auralis.ai/Auralis.ai
+source backend/venv/bin/activate
+python3 verify_installation.py
+```
+
+This script will check all packages and provide detailed feedback.
+
+### Manual Test
 ```bash
 cd backend
 source venv/bin/activate
