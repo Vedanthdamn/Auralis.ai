@@ -121,6 +121,8 @@ Perfect for:
 
 ## 🚀 Installation
 
+> **⚠️ Important:** If you're experiencing dependency conflicts with numpy and TensorFlow, please see [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for the complete solution. We've updated numpy to 2.0.2 for full Python 3.12/3.13 compatibility.
+
 ### 1. Clone the Repository
 
 ```bash

@@ -32,7 +32,7 @@ python3 << 'EOF'
 import sys
 
 packages = [
-    ('numpy', '2.1.0'),
+    ('numpy', '2.0.2'),
     ('pandas', '2.2.3'),
     ('sklearn', '1.5.2'),
     ('tensorflow', '2.18.0'),
