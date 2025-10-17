@@ -20,7 +20,7 @@
   - Stats cards showing current metrics
 
 #### Backend (FastAPI)
-- **Technology**: FastAPI 0.109, Python 3.9+
+- **Technology**: FastAPI 0.109, Python 3.13+
 - **Features**:
   - RESTful API with comprehensive endpoints
   - WebSocket support for real-time data streaming

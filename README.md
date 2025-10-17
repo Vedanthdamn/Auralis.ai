@@ -5,7 +5,7 @@
 Illuminating Safer Journeys with AI
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.13+-blue.svg)
 ![React](https://img.shields.io/badge/react-18.2+-61dafb.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg)
 
@@ -110,7 +110,7 @@ Perfect for:
 
 ### Required
 - **Node.js** 18+ (for frontend)
-- **Python** 3.9+ (for backend and ML)
+- **Python** 3.13+ (for backend and ML)
 - **macOS** (recommended) or Linux/Windows
 
 ### Optional
@@ -352,7 +352,7 @@ Everything runs locally - perfect for development and testing.
 
 ### Future Raspberry Pi Deployment
 The project structure supports deployment to Raspberry Pi:
-1. Install Python 3.9+ on Pi
+1. Install Python 3.13+ on Pi
 2. Clone repository
 3. Follow installation steps
 4. Configure to start on boot

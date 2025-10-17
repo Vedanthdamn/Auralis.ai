@@ -33,7 +33,7 @@ No special hardware is required. The system runs on standard computers. For prod
 **A:** Yes! Ollama is optional for AI-generated feedback. Without it, the system uses rule-based feedback which works well. Simply skip the Ollama installation.
 
 ### Q: What Python version do I need?
-**A:** Python 3.9 or higher is required. Check with `python3 --version`.
+**A:** Python 3.13 or higher is required. Check with `python3 --version`.
 
 ### Q: npm install fails with errors, what do I do?
 **A:** Try:
