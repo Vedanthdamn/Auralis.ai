@@ -68,8 +68,9 @@ except Exception as e:
 
 **Performance**:
 - Successfully handles concurrent requests from multiple simulators
-- No timeouts observed during testing
+- No timeouts observed during testing with 1-second intervals
 - All requests processed with 200 OK status
+- Tested with uvicorn ASGI server (default configuration)
 
 ## 2. Multiple Simulation Modes
 
@@ -273,9 +274,10 @@ INFO:     127.0.0.1:54928 - "POST /api/driving_data HTTP/1.1" 200 OK  # Fleet
 3. **Fleet Data Polling**: Fleet dashboard uses 30-second polling for statistics
    - **Reason**: Historical data not available via WebSocket
    
-4. **Deprecation Warning**: `datetime.utcnow()` is deprecated
-   - **Impact**: Console warning only, no functional impact
-   - **Future Fix**: Update to `datetime.now(datetime.UTC)`
+4. **datetime.utcnow() Usage**: Code uses `datetime.utcnow()` which shows deprecation warnings in Python 3.12+
+   - **Impact**: Warning messages visible in console during simulation runs
+   - **Evidence**: Seen in test output logs during simulator execution
+   - **Future Fix**: Update to `datetime.now(datetime.UTC)` for Python 3.12+ compatibility
 
 ## 8. Future Enhancements
 
