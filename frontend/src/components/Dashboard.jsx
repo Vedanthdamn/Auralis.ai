@@ -4,11 +4,11 @@ import TelemetryCharts from './TelemetryCharts'
 import FeedbackPanel from './FeedbackPanel'
 import StatsCards from './StatsCards'
 
-function Dashboard({ drivingData, score, feedback, isConnected }) {
+function Dashboard({ drivingData, score, feedback }) {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <StatsCards drivingData={drivingData} isConnected={isConnected} />
+      <StatsCards drivingData={drivingData} />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Score Display - Takes 1 column */}
