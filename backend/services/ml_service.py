@@ -221,3 +221,175 @@ Provide brief, constructive feedback (2-3 sentences) to help improve driving saf
             feedback_parts.append("Smoother steering inputs provide better vehicle control.")
         
         return " ".join(feedback_parts)
+    
+    async def generate_driver_feedback(self, driver_stats: dict) -> str:
+        """
+        Generate AI feedback for a driver based on their aggregate stats
+        
+        Args:
+            driver_stats: Dictionary containing driver statistics (avg_score, avg_speed, etc.)
+            
+        Returns:
+            str: Feedback message for the driver
+        """
+        avg_score = driver_stats.get('avg_score', 0)
+        trip_count = driver_stats.get('trip_count', 0)
+        avg_speed = driver_stats.get('avg_speed', 0)
+        avg_braking = driver_stats.get('avg_braking', 0)
+        
+        # Try to use Ollama for AI-generated feedback
+        try:
+            feedback = await self._generate_ollama_driver_feedback(driver_stats)
+            if feedback:
+                return feedback
+        except Exception as e:
+            print(f"Ollama not available for driver feedback: {e}")
+        
+        # Fall back to rule-based feedback
+        feedback_parts = []
+        
+        if avg_score >= 8:
+            feedback_parts.append(f"Outstanding performance! Maintaining an average score of {avg_score:.1f}/10 over {trip_count} trips.")
+        elif avg_score >= 6:
+            feedback_parts.append(f"Good driving record with {avg_score:.1f}/10 average. Focus on consistency.")
+        elif avg_score >= 4:
+            feedback_parts.append(f"Average score of {avg_score:.1f}/10 needs improvement. Review your driving habits.")
+        else:
+            feedback_parts.append(f"Score of {avg_score:.1f}/10 is concerning. Immediate attention needed.")
+        
+        # Speed feedback
+        if avg_speed > 70:
+            feedback_parts.append("Reduce average speed for better safety scores.")
+        elif avg_speed < 40:
+            feedback_parts.append("Good speed control maintained.")
+        
+        # Braking feedback
+        if avg_braking > 0.5:
+            feedback_parts.append("Heavy braking detected. Try anticipating stops earlier.")
+        else:
+            feedback_parts.append("Smooth braking patterns observed.")
+        
+        return " ".join(feedback_parts)
+    
+    async def _generate_ollama_driver_feedback(self, driver_stats: dict) -> Optional[str]:
+        """Generate feedback for a driver using Ollama LLM"""
+        try:
+            avg_score = driver_stats.get('avg_score', 0)
+            trip_count = driver_stats.get('trip_count', 0)
+            avg_speed = driver_stats.get('avg_speed', 0)
+            avg_acceleration = driver_stats.get('avg_acceleration', 0)
+            avg_braking = driver_stats.get('avg_braking', 0)
+            
+            prompt = f"""You are a professional fleet manager analyzing driver performance.
+
+Driver Statistics:
+- Average Safety Score: {avg_score:.1f}/10
+- Total Trips: {trip_count}
+- Average Speed: {avg_speed:.1f} km/h
+- Average Acceleration: {avg_acceleration:.2f} m/s²
+- Average Braking Intensity: {avg_braking:.2f}
+
+Provide brief, actionable feedback (1-2 sentences) to help this driver improve. Be professional and constructive."""
+
+            response = requests.post(
+                f"{self.ollama_url}/api/generate",
+                json={
+                    "model": "mistral",  # Use Mistral 7B model
+                    "prompt": prompt,
+                    "stream": False
+                },
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result.get('response', '').strip()
+        except Exception as e:
+            print(f"Ollama driver feedback generation error: {e}")
+        
+        return None
+    
+    async def generate_fleet_insights(self, fleet_summary: dict, driver_stats: list) -> str:
+        """
+        Generate fleet-level insights using AI
+        
+        Args:
+            fleet_summary: Fleet-level statistics
+            driver_stats: List of individual driver statistics
+            
+        Returns:
+            str: Fleet insights message
+        """
+        # Try to use Ollama for AI-generated insights
+        try:
+            insights = await self._generate_ollama_fleet_insights(fleet_summary, driver_stats)
+            if insights:
+                return insights
+        except Exception as e:
+            print(f"Ollama not available for fleet insights: {e}")
+        
+        # Fall back to rule-based insights
+        total_drivers = fleet_summary.get('total_drivers', 0)
+        fleet_avg = fleet_summary.get('fleet_avg_score', 0)
+        safest_driver = fleet_summary.get('safest_driver', 'N/A')
+        
+        # Find most improved driver (simplified - would need historical data)
+        sorted_drivers = sorted(driver_stats, key=lambda x: x.get('avg_score', 0), reverse=True)
+        
+        insights_parts = []
+        insights_parts.append(f"Fleet Overview: {total_drivers} drivers with {fleet_avg:.1f}/10 average score.")
+        insights_parts.append(f"Top Performer: {safest_driver}.")
+        
+        if fleet_avg >= 7:
+            insights_parts.append("Overall fleet performance is strong. Maintain current standards.")
+        elif fleet_avg >= 5:
+            insights_parts.append("Fleet performance is acceptable but has room for improvement.")
+        else:
+            insights_parts.append("Fleet performance requires immediate attention and training.")
+        
+        # Identify drivers needing attention
+        low_scorers = [d for d in driver_stats if d.get('avg_score', 0) < 5]
+        if low_scorers:
+            insights_parts.append(f"{len(low_scorers)} driver(s) need additional training and support.")
+        
+        return " ".join(insights_parts)
+    
+    async def _generate_ollama_fleet_insights(self, fleet_summary: dict, driver_stats: list) -> Optional[str]:
+        """Generate fleet insights using Ollama LLM"""
+        try:
+            total_drivers = fleet_summary.get('total_drivers', 0)
+            fleet_avg = fleet_summary.get('fleet_avg_score', 0)
+            total_trips = fleet_summary.get('total_trips', 0)
+            
+            # Calculate additional metrics
+            high_performers = len([d for d in driver_stats if d.get('avg_score', 0) >= 8])
+            low_performers = len([d for d in driver_stats if d.get('avg_score', 0) < 5])
+            
+            prompt = f"""You are a fleet operations analyst providing insights to management.
+
+Fleet Metrics:
+- Total Drivers: {total_drivers}
+- Total Trips: {total_trips}
+- Average Fleet Score: {fleet_avg:.1f}/10
+- High Performers (8+): {high_performers}
+- Low Performers (<5): {low_performers}
+
+Provide brief, actionable insights (2-3 sentences) for fleet management. Focus on trends and recommendations."""
+
+            response = requests.post(
+                f"{self.ollama_url}/api/generate",
+                json={
+                    "model": "mistral",  # Use Mistral 7B model
+                    "prompt": prompt,
+                    "stream": False
+                },
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result.get('response', '').strip()
+        except Exception as e:
+            print(f"Ollama fleet insights generation error: {e}")
+        
+        return None

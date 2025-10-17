@@ -175,3 +175,139 @@ async def get_session(session_id: str, request: Request):
         return session_data
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Session not found: {str(e)}")
+
+# Fleet Management Endpoints
+
+@router.get("/fleet/summary")
+async def get_fleet_summary(request: Request):
+    """
+    Get fleet-level summary statistics
+    """
+    supabase_service = request.app.state.supabase_service
+    
+    if not supabase_service.is_configured():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    
+    try:
+        summary = await supabase_service.get_fleet_summary()
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting fleet summary: {str(e)}")
+
+@router.get("/fleet/drivers")
+async def get_fleet_drivers(request: Request):
+    """
+    Get list of all drivers with their statistics and rankings
+    """
+    supabase_service = request.app.state.supabase_service
+    
+    if not supabase_service.is_configured():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    
+    try:
+        driver_stats = await supabase_service.get_driver_stats()
+        
+        # Sort by avg_score and add rankings
+        driver_stats.sort(key=lambda x: x.get('avg_score', 0), reverse=True)
+        
+        for idx, driver in enumerate(driver_stats, start=1):
+            driver['rank'] = idx
+        
+        return {
+            "drivers": driver_stats,
+            "total_count": len(driver_stats)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting fleet drivers: {str(e)}")
+
+@router.get("/fleet/drivers/{driver_id}")
+async def get_driver_details(driver_id: str, request: Request):
+    """
+    Get detailed information for a specific driver
+    """
+    supabase_service = request.app.state.supabase_service
+    
+    if not supabase_service.is_configured():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    
+    try:
+        # Get driver profile
+        driver_profile = await supabase_service.get_driver(driver_id)
+        
+        # Get driver statistics
+        driver_stats_list = await supabase_service.get_driver_stats(driver_id)
+        driver_stats = driver_stats_list[0] if driver_stats_list else None
+        
+        if not driver_profile and not driver_stats:
+            raise HTTPException(status_code=404, detail="Driver not found")
+        
+        return {
+            "profile": driver_profile,
+            "stats": driver_stats
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting driver details: {str(e)}")
+
+@router.post("/fleet/drivers/{driver_id}/feedback")
+async def generate_driver_feedback(driver_id: str, request: Request):
+    """
+    Generate AI feedback for a specific driver based on their performance
+    """
+    supabase_service = request.app.state.supabase_service
+    ml_service = request.app.state.ml_service
+    
+    if not supabase_service.is_configured():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    
+    try:
+        # Get driver statistics
+        driver_stats_list = await supabase_service.get_driver_stats(driver_id)
+        
+        if not driver_stats_list:
+            raise HTTPException(status_code=404, detail="Driver not found")
+        
+        driver_stats = driver_stats_list[0]
+        
+        # Generate feedback
+        feedback = await ml_service.generate_driver_feedback(driver_stats)
+        
+        return {
+            "driver_id": driver_id,
+            "driver_name": driver_stats.get('driver_name', driver_id),
+            "feedback": feedback,
+            "score": driver_stats.get('avg_score', 0),
+            "timestamp": datetime.utcnow()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating driver feedback: {str(e)}")
+
+@router.get("/fleet/insights")
+async def get_fleet_insights(request: Request):
+    """
+    Get AI-generated insights for the entire fleet
+    """
+    supabase_service = request.app.state.supabase_service
+    ml_service = request.app.state.ml_service
+    
+    if not supabase_service.is_configured():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    
+    try:
+        # Get fleet summary and driver stats
+        fleet_summary = await supabase_service.get_fleet_summary()
+        driver_stats = await supabase_service.get_driver_stats()
+        
+        # Generate insights
+        insights = await ml_service.generate_fleet_insights(fleet_summary, driver_stats)
+        
+        return {
+            "insights": insights,
+            "timestamp": datetime.utcnow(),
+            "fleet_summary": fleet_summary
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating fleet insights: {str(e)}")

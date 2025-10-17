@@ -1,7 +1,10 @@
-import { Moon, Sun, Activity } from 'lucide-react'
+import { Moon, Sun, Activity, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Link, useLocation } from 'react-router-dom'
 
-function Header({ darkMode, setDarkMode, isConnected }) {
+function Header({ darkMode, setDarkMode, isConnected, showFleetLink = false }) {
+  const location = useLocation()
+  
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-4 py-4">
@@ -26,13 +29,48 @@ function Header({ darkMode, setDarkMode, isConnected }) {
           </motion.div>
           
           <div className="flex items-center space-x-4">
+            {/* Navigation Links */}
+            {showFleetLink && (
+              <div className="flex items-center space-x-2">
+                <Link
+                  to="/dashboard"
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    location.pathname === '/dashboard'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100'
+                  }`}
+                >
+                  <span className="flex items-center space-x-2">
+                    <Activity size={18} />
+                    <span className="hidden sm:inline">Personal</span>
+                  </span>
+                </Link>
+                
+                <Link
+                  to="/dashboard/fleet"
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    location.pathname === '/dashboard/fleet'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100'
+                  }`}
+                >
+                  <span className="flex items-center space-x-2">
+                    <Users size={18} />
+                    <span className="hidden sm:inline">Fleet</span>
+                  </span>
+                </Link>
+              </div>
+            )}
+            
             {/* Connection Status */}
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {isConnected ? 'Connected' : 'Disconnected'}
-              </span>
-            </div>
+            {isConnected !== undefined && (
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {isConnected ? 'Connected' : 'Disconnected'}
+                </span>
+              </div>
+            )}
             
             {/* Dark Mode Toggle */}
             <button
