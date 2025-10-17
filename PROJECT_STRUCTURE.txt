@@ -1,0 +1,244 @@
+```
+╔══════════════════════════════════════════════════════════════════════════╗
+║                           DriveMind.ai                                   ║
+║              AI-Powered Driver Safety Scoring System                     ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         SYSTEM ARCHITECTURE                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+                              ┌──────────────┐
+                              │   Browser    │
+                              │ (localhost:  │
+                              │    3000)     │
+                              └──────┬───────┘
+                                     │ HTTP/WS
+                     ┌───────────────┴───────────────┐
+                     │                               │
+              ┌──────▼──────┐                 ┌──────▼──────┐
+              │  Frontend   │                 │   Backend   │
+              │   (React)   │◄────WebSocket──►│  (FastAPI)  │
+              │   Vite +    │                 │             │
+              │  Tailwind   │                 │  Port 8000  │
+              └─────────────┘                 └──────┬──────┘
+                     │                               │
+                     │                    ┌──────────┼──────────┐
+                     │                    │          │          │
+                     │              ┌─────▼────┐ ┌───▼────┐ ┌──▼─────┐
+                     │              │ML Service│ │Supabase│ │ Ollama │
+                     │              │(Scoring) │ │  (DB)  │ │ (LLM)  │
+                     │              └─────▲────┘ └────────┘ └────────┘
+                     │                    │
+                     │              ┌─────┴────┐
+                     │              │Simulator │
+                     │              │  (Test)  │
+                     └──────────────►          │
+                                    └──────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        PROJECT STRUCTURE                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Auralis.ai/
+│
+├── 📁 frontend/                    # React Frontend (Vite + TailwindCSS)
+│   ├── src/
+│   │   ├── components/             # React Components
+│   │   │   ├── Dashboard.jsx       # Main dashboard container
+│   │   │   ├── Header.jsx          # App header with dark mode
+│   │   │   ├── ScoreDisplay.jsx    # Circular score gauge
+│   │   │   ├── TelemetryCharts.jsx # Real-time line charts
+│   │   │   ├── FeedbackPanel.jsx   # AI feedback display
+│   │   │   └── StatsCards.jsx      # Metric cards
+│   │   ├── hooks/                  # Custom React Hooks
+│   │   │   ├── useDarkMode.js      # Dark mode state
+│   │   │   └── useWebSocket.js     # WebSocket connection
+│   │   ├── App.jsx                 # Root component
+│   │   ├── main.jsx                # Entry point
+│   │   └── index.css               # Global styles
+│   ├── package.json                # Dependencies
+│   ├── vite.config.js              # Vite configuration
+│   └── tailwind.config.js          # TailwindCSS config
+│
+├── 📁 backend/                     # FastAPI Backend
+│   ├── app/
+│   │   └── routes.py               # API endpoints
+│   ├── models/
+│   │   └── schemas.py              # Pydantic models
+│   ├── services/
+│   │   ├── ml_service.py           # ML inference service
+│   │   └── supabase_service.py     # Database service
+│   ├── main.py                     # FastAPI application
+│   ├── requirements.txt            # Python dependencies
+│   └── .env.example                # Environment template
+│
+├── 📁 ml_model/                    # Machine Learning
+│   ├── generate_data.py            # Synthetic data generator
+│   ├── train_model.py              # Model training script
+│   ├── requirements.txt            # ML dependencies
+│   └── [trained_model.pkl]         # Trained model (generated)
+│
+├── 📁 simulation/                  # Driving Simulator
+│   ├── drive_simulator.py          # Main simulator
+│   └── requirements.txt            # Simulator dependencies
+│
+├── 📁 docs/                        # Documentation
+│   ├── QUICKSTART.md               # Quick start guide
+│   ├── ARCHITECTURE.md             # System architecture
+│   ├── DEVELOPMENT.md              # Development guide
+│   ├── FAQ.md                      # Frequently asked questions
+│   ├── database_schema.md          # Database schema
+│   ├── api_example.py              # API usage example
+│   └── example_data.csv            # Sample data
+│
+├── 📁 scripts/                     # Automation Scripts
+│   └── setup.sh                    # Automated setup
+│
+├── 📄 README.md                    # Main documentation
+├── 📄 PROJECT_SUMMARY.md           # Project overview
+├── 📄 FEATURES.md                  # Features checklist
+├── 📄 LICENSE                      # MIT License
+└── 📄 .gitignore                   # Git ignore rules
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          DATA FLOW                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  1. Simulation → Backend API (POST /api/driving_data)
+          ↓
+  2. Backend → ML Model (calculate safety score)
+          ↓
+  3. Backend → WebSocket Broadcast (to all clients)
+          ↓
+  4. Frontend → Update Charts & Score Display
+          ↓
+  5. Backend → Database (optional, store events)
+          ↓
+  6. Backend → LLM (optional, generate feedback)
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       TECHNOLOGY STACK                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Frontend:
+  • React 18.2          - UI framework
+  • Vite 5.0           - Build tool
+  • TailwindCSS 3.3    - Styling
+  • Recharts 2.10      - Charts
+  • Framer Motion      - Animations
+  • WebSocket API      - Real-time updates
+
+Backend:
+  • FastAPI 0.109      - Web framework
+  • Uvicorn 0.27       - ASGI server
+  • Pydantic 2.5       - Validation
+  • WebSockets 12.0    - Real-time protocol
+
+Machine Learning:
+  • NumPy 1.26         - Numerical computing
+  • scikit-learn 1.4   - ML algorithms
+  • TensorFlow 2.16    - Neural networks
+  • Pandas 2.1         - Data manipulation
+
+Database (Optional):
+  • Supabase           - PostgreSQL backend
+  • PostgreSQL         - Relational database
+
+AI (Optional):
+  • Ollama             - Local LLM server
+  • llama2/mistral     - Language models
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        QUICK START                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Terminal 1 (Backend):
+  $ cd backend
+  $ source venv/bin/activate
+  $ uvicorn main:app --reload
+
+Terminal 2 (Frontend):
+  $ cd frontend
+  $ npm run dev
+
+Terminal 3 (Simulator):
+  $ cd simulation
+  $ python drive_simulator.py
+
+Browser:
+  → Open http://localhost:3000
+  → View real-time dashboard
+  → Monitor driving score
+  → Read AI feedback
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         KEY FEATURES                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+
+✓ Real-time telemetry charts (speed, acceleration, braking)
+✓ Live driving score (0-10) with animated gauge
+✓ AI-generated feedback (with LLM integration)
+✓ Dark mode with persistent preferences
+✓ Fully responsive design
+✓ WebSocket real-time updates
+✓ Multiple ML algorithms
+✓ Supabase database integration
+✓ Realistic driving simulation
+✓ Comprehensive documentation
+✓ Production-ready code
+✓ Apple Silicon optimized
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       DEPLOYMENT OPTIONS                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Local Development:
+  • macOS, Linux, Windows
+  • All services on localhost
+  • Hot reload enabled
+
+Production:
+  • Frontend: Vercel, Netlify, Cloudflare Pages
+  • Backend: Railway, Render, AWS, Google Cloud
+  • Database: Supabase (managed PostgreSQL)
+  • ML Model: Packaged with backend
+
+Edge Computing:
+  • Raspberry Pi deployment ready
+  • Optimized for low-power devices
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     DOCUMENTATION LINKS                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+📖 README.md           - Main project overview
+🚀 docs/QUICKSTART.md  - 5-minute setup guide
+🏗️  docs/ARCHITECTURE.md - Technical architecture
+💻 docs/DEVELOPMENT.md - Development workflow
+❓ docs/FAQ.md         - Frequently asked questions
+🗄️  docs/database_schema.md - Database schema
+📊 PROJECT_SUMMARY.md  - Project overview
+✅ FEATURES.md         - Complete feature list
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          STATISTICS                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+📁 Total Files:          32+
+📝 Lines of Code:        ~4,500+
+🎨 React Components:     6
+🪝 Custom Hooks:         2
+🔌 API Endpoints:        7 REST + 1 WebSocket
+🤖 ML Algorithms:        3 (RF, GB, NN)
+🗄️  Database Tables:     4
+📚 Documentation:        9 files
+🚗 Driving Scenarios:    5
+📊 Charts/Graphs:        3
+
+═══════════════════════════════════════════════════════════════════════════
+
+                Built with ❤️ for Safer Driving
+
+═══════════════════════════════════════════════════════════════════════════
+```
