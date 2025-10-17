@@ -6,7 +6,7 @@ This guide covers development workflows, best practices, and troubleshooting for
 
 ### Prerequisites
 - Node.js 18+ and npm
-- Python 3.9+
+- Python 3.13+
 - Git
 - (Optional) Ollama for AI feedback
 - (Optional) Supabase account
@@ -304,7 +304,7 @@ npm run build
 **Solution**:
 ```bash
 # Check Python version
-python3 --version  # Should be 3.9+
+python3 --version  # Should be 3.13+
 
 # Recreate virtual environment
 rm -rf venv

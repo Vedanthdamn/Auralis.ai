@@ -6,7 +6,7 @@ This guide will help you get DriveMind.ai up and running quickly.
 
 Before starting, make sure you have:
 - [ ] Node.js 18+ installed (`node --version`)
-- [ ] Python 3.9+ installed (`python3 --version`)
+- [ ] Python 3.13+ installed (`python3 --version`)
 - [ ] Git installed (`git --version`)
 
 ## Quick Setup (5 minutes)
@@ -139,7 +139,7 @@ You should see:
 
 ### Backend crashes
 - Ensure virtual environment is activated
-- Check Python version is 3.9+
+- Check Python version is 3.13+
 - Verify all dependencies installed
 
 ### No AI feedback
