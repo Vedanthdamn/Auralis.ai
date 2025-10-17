@@ -291,19 +291,31 @@ Driver Statistics:
 
 Provide brief, actionable feedback (1-2 sentences) to help this driver improve. Be professional and constructive."""
 
-            response = requests.post(
-                f"{self.ollama_url}/api/generate",
-                json={
-                    "model": "mistral",  # Use Mistral 7B model
-                    "prompt": prompt,
-                    "stream": False
-                },
-                timeout=15
-            )
+            # Try mistral:7b-instruct-q4_0 first, then fall back to mistral:latest
+            models_to_try = ["mistral:7b-instruct-q4_0", "mistral:latest", "mistral"]
             
-            if response.status_code == 200:
-                result = response.json()
-                return result.get('response', '').strip()
+            for model in models_to_try:
+                try:
+                    response = requests.post(
+                        f"{self.ollama_url}/api/generate",
+                        json={
+                            "model": model,
+                            "prompt": prompt,
+                            "stream": False
+                        },
+                        timeout=15
+                    )
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        feedback = result.get('response', '').strip()
+                        if feedback:
+                            print(f"✅ Generated driver feedback using model: {model}")
+                            return feedback
+                except Exception as model_error:
+                    print(f"Failed to use model {model}: {model_error}")
+                    continue
+            
         except Exception as e:
             print(f"Ollama driver feedback generation error: {e}")
         
@@ -376,19 +388,31 @@ Fleet Metrics:
 
 Provide brief, actionable insights (2-3 sentences) for fleet management. Focus on trends and recommendations."""
 
-            response = requests.post(
-                f"{self.ollama_url}/api/generate",
-                json={
-                    "model": "mistral",  # Use Mistral 7B model
-                    "prompt": prompt,
-                    "stream": False
-                },
-                timeout=15
-            )
+            # Try mistral:7b-instruct-q4_0 first, then fall back to mistral:latest
+            models_to_try = ["mistral:7b-instruct-q4_0", "mistral:latest", "mistral"]
             
-            if response.status_code == 200:
-                result = response.json()
-                return result.get('response', '').strip()
+            for model in models_to_try:
+                try:
+                    response = requests.post(
+                        f"{self.ollama_url}/api/generate",
+                        json={
+                            "model": model,
+                            "prompt": prompt,
+                            "stream": False
+                        },
+                        timeout=15
+                    )
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        insights = result.get('response', '').strip()
+                        if insights:
+                            print(f"✅ Generated fleet insights using model: {model}")
+                            return insights
+                except Exception as model_error:
+                    print(f"Failed to use model {model}: {model_error}")
+                    continue
+            
         except Exception as e:
             print(f"Ollama fleet insights generation error: {e}")
         

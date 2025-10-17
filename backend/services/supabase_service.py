@@ -289,7 +289,9 @@ class SupabaseService:
                     'total_trips': 0,
                     'fleet_avg_score': 0,
                     'safest_driver': None,
-                    'safest_driver_score': None
+                    'safest_driver_score': None,
+                    'most_improved_driver': None,
+                    'most_improved_score': None
                 }
             
             total_drivers = len(driver_stats)
@@ -299,12 +301,28 @@ class SupabaseService:
             # Find safest driver
             safest = max(driver_stats, key=lambda x: x.get('avg_score', 0))
             
+            # Find most improved driver (simplified - uses best_score - avg_score as improvement indicator)
+            # In a real scenario, this would compare historical data over time
+            most_improved = None
+            max_improvement = 0
+            
+            for driver in driver_stats:
+                best = driver.get('best_score', 0)
+                worst = driver.get('worst_score', 0)
+                if best and worst:
+                    improvement = best - worst
+                    if improvement > max_improvement:
+                        max_improvement = improvement
+                        most_improved = driver
+            
             return {
                 'total_drivers': total_drivers,
                 'total_trips': total_trips,
                 'fleet_avg_score': round(fleet_avg_score, 2),
                 'safest_driver': safest.get('driver_name') or safest.get('driver_id'),
-                'safest_driver_score': safest.get('avg_score')
+                'safest_driver_score': safest.get('avg_score'),
+                'most_improved_driver': most_improved.get('driver_name') or most_improved.get('driver_id') if most_improved else None,
+                'most_improved_score': most_improved.get('avg_score') if most_improved else None
             }
         except Exception as e:
             print(f"Error getting fleet summary: {e}")
