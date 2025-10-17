@@ -15,11 +15,18 @@ ml_service = None
 supabase_service = None
 active_connections = []
 
+# Concurrency control for handling multiple simulators
+request_semaphore = None
+MAX_CONCURRENT_REQUESTS = 10  # Allow up to 10 concurrent scoring requests
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize services
-    global ml_service, supabase_service
+    global ml_service, supabase_service, request_semaphore
     print("🚀 Starting DriveMind.ai Backend...")
+    
+    # Initialize semaphore for concurrency control
+    request_semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
     
     # Update global variables (not local)
     ml_service = MLService()
@@ -28,6 +35,7 @@ async def lifespan(app: FastAPI):
     # Update app state with initialized services
     app.state.ml_service = ml_service
     app.state.supabase_service = supabase_service
+    app.state.request_semaphore = request_semaphore
     
     print("✅ Services initialized successfully")
     

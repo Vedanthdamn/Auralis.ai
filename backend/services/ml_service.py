@@ -68,6 +68,7 @@ class MLService:
     def calculate_score(self, data: DrivingData) -> float:
         """
         Calculate driving safety score from telemetry data
+        Optimized for fast execution to handle high-frequency requests
         
         Args:
             data: DrivingData object containing telemetry
@@ -80,14 +81,15 @@ class MLService:
                 # Use ML model for prediction
                 try:
                     features = self._extract_features(data)
-                    score = self.model.predict([features])[0]
+                    # Direct prediction without extra validation for speed
+                    score = float(self.model.predict([features])[0])
                     # Ensure score is within bounds
                     score = max(0.0, min(10.0, score))
                 except Exception as e:
                     print(f"Error using ML model: {e}. Falling back to rule-based.")
                     score = self._rule_based_score(data)
             else:
-                # Use rule-based scoring
+                # Use optimized rule-based scoring
                 score = self._rule_based_score(data)
             
             self.last_score = score

@@ -12,6 +12,7 @@ class DrivingData(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     simulation_mode: Optional[str] = Field(None, description="Simulation mode: 'personal' or 'fleet'")
     scenario: Optional[str] = Field(None, description="Current driving scenario")
+    session_id: Optional[str] = Field(None, description="Session ID for tracking separate simulation runs")
     
     class Config:
         json_schema_extra = {
@@ -23,7 +24,8 @@ class DrivingData(BaseModel):
                 "jerk": 0.1,
                 "timestamp": "2024-01-01T12:00:00",
                 "simulation_mode": "personal",
-                "scenario": "normal"
+                "scenario": "normal",
+                "session_id": "550e8400-e29b-41d4-a716-446655440000"
             }
         }
 

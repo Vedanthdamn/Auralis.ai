@@ -33,6 +33,10 @@ class DrivingSimulator:
         self.scenario = 'normal'
         self.target_speed = 60.0
         
+        # Session tracking for independent modes
+        self.session_id = None
+        self.session_scores = []  # Track scores for this session
+        
     def update_physics(self, dt: float):
         """Update vehicle physics"""
         # Convert km/h to m/s for calculations
@@ -165,23 +169,64 @@ class DrivingSimulator:
             'scenario': self.scenario
         }
     
-    def send_telemetry(self, telemetry: Dict) -> Optional[Dict]:
-        """Send telemetry to backend API"""
-        try:
-            response = requests.post(
-                f"{self.api_url}/driving_data",
-                json=telemetry,
-                timeout=5
-            )
+    def send_telemetry(self, telemetry: Dict, max_retries: int = 3) -> Optional[Dict]:
+        """
+        Send telemetry to backend API with retry mechanism
+        
+        Args:
+            telemetry: Telemetry data to send
+            max_retries: Maximum number of retry attempts (default: 3)
             
-            if response.status_code == 200:
-                return response.json()
-            else:
-                print(f"❌ Error: {response.status_code} - {response.text}")
-                return None
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Connection error: {e}")
-            return None
+        Returns:
+            Optional[Dict]: Response from backend or None if failed
+        """
+        retry_delays = [0.5, 1.0, 2.0]  # Exponential backoff delays
+        
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    f"{self.api_url}/driving_data",
+                    json=telemetry,
+                    timeout=10  # Increased timeout to 10 seconds
+                )
+                
+                if response.status_code == 200:
+                    return response.json()
+                elif response.status_code == 503:
+                    # Backend is busy, retry
+                    if attempt < max_retries - 1:
+                        delay = retry_delays[attempt]
+                        print(f"⏳ Backend busy, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                        time.sleep(delay)
+                        continue
+                    else:
+                        print(f"❌ Backend busy after {max_retries} attempts")
+                        return None
+                else:
+                    print(f"❌ Error: {response.status_code} - {response.text}")
+                    return None
+                    
+            except requests.exceptions.Timeout:
+                if attempt < max_retries - 1:
+                    delay = retry_delays[attempt]
+                    print(f"⏳ Request timeout, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                    time.sleep(delay)
+                    continue
+                else:
+                    print(f"❌ Request timeout after {max_retries} attempts")
+                    return None
+                    
+            except requests.exceptions.RequestException as e:
+                if attempt < max_retries - 1:
+                    delay = retry_delays[attempt]
+                    print(f"⏳ Connection error: {e}, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                    time.sleep(delay)
+                    continue
+                else:
+                    print(f"❌ Connection error after {max_retries} attempts: {e}")
+                    return None
+        
+        return None
     
     def run_simulation(self, duration: int = 300, update_interval: float = 1.0, 
                        simulation_mode: str = 'personal'):
@@ -193,8 +238,15 @@ class DrivingSimulator:
             update_interval: How often to send data to backend (seconds)
             simulation_mode: Simulation mode - 'personal' or 'fleet'
         """
+        import uuid
+        
+        # Generate unique session ID for this simulation run
+        self.session_id = str(uuid.uuid4())
+        self.session_scores = []
+        
         mode_emoji = "🚗" if simulation_mode == 'personal' else "🚕"
         print(f"{mode_emoji} Starting DriveMind.ai Driving Simulation ({simulation_mode.upper()} mode)")
+        print(f"Session ID: {self.session_id}")
         print(f"Duration: {duration}s, Update interval: {update_interval}s")
         print("=" * 50)
         
@@ -229,6 +281,7 @@ class DrivingSimulator:
                 # Send data at specified interval
                 if current_time - last_update >= update_interval:
                     telemetry = self.get_telemetry(simulation_mode)
+                    telemetry['session_id'] = self.session_id
                     
                     # Print current state
                     print(f"{mode_emoji} [{simulation_mode.upper()}] Speed: {telemetry['speed']:6.1f} km/h | "
@@ -237,12 +290,14 @@ class DrivingSimulator:
                           f"Steer: {telemetry['steering_angle']:5.1f}° | "
                           f"Scenario: {telemetry['scenario']:10s}", end='')
                     
-                    # Send to backend
+                    # Send to backend with retry
                     response = self.send_telemetry(telemetry)
                     
                     if response:
                         score = response.get('score', 0)
-                        print(f" | Score: {score:4.1f}/10 ✅")
+                        self.session_scores.append(score)
+                        avg_score = sum(self.session_scores) / len(self.session_scores)
+                        print(f" | Score: {score:4.1f}/10 | Avg: {avg_score:4.1f}/10 ✅")
                     else:
                         print(" | ⚠️ No response")
                     
@@ -254,7 +309,15 @@ class DrivingSimulator:
         except KeyboardInterrupt:
             print("\n\n⚠️ Simulation interrupted by user")
         
-        print(f"\n✅ {simulation_mode.upper()} Simulation complete!")
+        # Print session summary
+        print(f"\n{'='*50}")
+        print(f"✅ {simulation_mode.upper()} Simulation complete!")
+        print(f"Session ID: {self.session_id}")
+        if self.session_scores:
+            print(f"Total updates: {len(self.session_scores)}")
+            print(f"Average score: {sum(self.session_scores) / len(self.session_scores):.2f}/10")
+            print(f"Best score: {max(self.session_scores):.2f}/10")
+            print(f"Worst score: {min(self.session_scores):.2f}/10")
 
 def main():
     import argparse
