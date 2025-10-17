@@ -21,8 +21,8 @@ The original dependencies included:
 - **Reason**: Starting from TensorFlow 2.16+, Apple Silicon (M1/M2/M4) support is built into the main `tensorflow` package. The `tensorflow-macos` and `tensorflow-metal` packages are no longer maintained or needed.
 
 #### 2. NumPy Update
-- **Changed**: `numpy==1.26.3` → `numpy==2.1.0`
-- **Reason**: NumPy 2.1.0 has full Python 3.13 support and provides better performance with modern Python versions.
+- **Changed**: `numpy==1.26.3` → `numpy==2.0.2`
+- **Reason**: NumPy 2.0.2 has full Python 3.13 support and is compatible with TensorFlow 2.18.0 (which requires numpy<2.1.0).
 
 #### 3. Scikit-learn Update
 - **Changed**: `scikit-learn==1.4.0` → `scikit-learn==1.5.2`
@@ -153,7 +153,7 @@ python3 -c "import sklearn; print(f'scikit-learn: {sklearn.__version__}')"
 python3 -c "import pandas; print(f'Pandas: {pandas.__version__}')"
 
 # Should output:
-# NumPy: 2.1.0
+# NumPy: 2.0.2
 # TensorFlow: 2.18.0
 # scikit-learn: 1.5.2
 # Pandas: 2.2.3
@@ -187,10 +187,11 @@ python train_model.py
 
 ## Performance Notes
 
-### NumPy 2.x
+### NumPy 2.0.2
+- Full Python 3.13 support
+- Compatible with TensorFlow 2.18.0 (requires numpy<2.1.0)
 - Improved performance for array operations
 - Better memory efficiency
-- Enhanced compatibility with modern Python
 
 ### TensorFlow 2.18
 - Latest bug fixes and security updates

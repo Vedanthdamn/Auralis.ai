@@ -63,7 +63,7 @@ pandas==2.1.4
 
 ### New Dependencies (Works on Python 3.13.5)
 ```
-numpy==2.1.0              ✅ Python 3.13 support
+numpy==2.0.2              ✅ Python 3.13 support + TensorFlow compatible
 scikit-learn==1.5.2       ✅ Python 3.13 support
 tensorflow==2.18.0        ✅ Includes Apple Silicon support
 pandas==2.2.3             ✅ Python 3.13 support
@@ -83,8 +83,9 @@ pandas==2.2.3             ✅ Python 3.13 support
 - Latest security updates
 - Better performance
 
-### Why NumPy 2.1.0?
+### Why NumPy 2.0.2?
 - Python 3.13 support
+- Compatible with TensorFlow 2.18.0 (requires numpy<2.1.0)
 - Better performance
 - Enhanced compatibility
 
