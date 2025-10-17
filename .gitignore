@@ -56,6 +56,7 @@ ml_model/trained_model_tf/
 ml_model/scaler.pkl
 ml_model/training_data.csv
 ml_model/*.csv
+!ml_model/example_*.csv
 
 # Logs
 *.log
@@ -68,3 +69,7 @@ logs/
 # OS
 Thumbs.db
 .DS_Store
+
+# Build artifacts
+frontend/dist/
+backend/__pycache__/
