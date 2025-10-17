@@ -18,7 +18,14 @@ class MLService:
         self.model = None
         self.last_score = None
         self.ollama_url = os.getenv('OLLAMA_API_URL', 'http://localhost:11434')
-        self.model_path = os.getenv('MODEL_PATH', '../ml_model/trained_model.pkl')
+        
+        # Determine model path - handle both relative and absolute paths
+        # __file__ is in backend/services/ml_service.py, so we need to go up to project root
+        default_model_path = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), 
+            '..', '..', 'ml_model', 'trained_model.pkl'
+        ))
+        self.model_path = os.getenv('MODEL_PATH', default_model_path)
         
         # Try to load the trained model
         self._load_model()
@@ -28,8 +35,20 @@ class MLService:
         try:
             if os.path.exists(self.model_path):
                 with open(self.model_path, 'rb') as f:
-                    self.model = pickle.load(f)
-                print(f"✅ ML model loaded from {self.model_path}")
+                    loaded_data = pickle.load(f)
+                
+                # Handle both dictionary format (from train_model.py) and direct model format
+                if isinstance(loaded_data, dict):
+                    # Dictionary format with 'model' key
+                    if 'model' in loaded_data:
+                        self.model = loaded_data['model']
+                        print(f"✅ ML model loaded from {self.model_path} (type: {loaded_data.get('type', 'unknown')})")
+                    else:
+                        print(f"⚠️ Invalid model format in {self.model_path}. Using rule-based scoring.")
+                else:
+                    # Direct model object
+                    self.model = loaded_data
+                    print(f"✅ ML model loaded from {self.model_path}")
             else:
                 print(f"⚠️ Model file not found at {self.model_path}. Using rule-based scoring.")
         except Exception as e:
