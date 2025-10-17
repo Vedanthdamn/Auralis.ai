@@ -21,31 +21,54 @@ async def receive_driving_data(data: DrivingData, request: Request):
         # Get ML service from app state
         ml_service = request.app.state.ml_service
         
-        # Calculate driving score
-        score = ml_service.calculate_score(data)
+        # Check if ML service is available
+        if ml_service is None:
+            raise HTTPException(
+                status_code=503, 
+                detail="ML service not initialized. Please check server logs."
+            )
+        
+        # Calculate driving score with error handling
+        try:
+            score = ml_service.calculate_score(data)
+        except AttributeError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error calculating score: ML service not properly initialized - {str(e)}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error calculating score: {str(e)}"
+            )
         
         # Broadcast to WebSocket clients
-        broadcast = request.app.state.broadcast
-        await broadcast({
-            "type": "driving_data",
-            "payload": data.model_dump(mode='json')
-        })
-        
-        await broadcast({
-            "type": "score_update",
-            "payload": {
-                "score": score,
-                "timestamp": datetime.utcnow().isoformat()
-            }
-        })
+        try:
+            broadcast = request.app.state.broadcast
+            await broadcast({
+                "type": "driving_data",
+                "payload": data.model_dump(mode='json')
+            })
+            
+            await broadcast({
+                "type": "score_update",
+                "payload": {
+                    "score": score,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            })
+        except Exception as e:
+            # Log but don't fail the request if broadcasting fails
+            print(f"Warning: Failed to broadcast to WebSocket clients: {e}")
         
         # Store in database if Supabase is configured
-        supabase_service = request.app.state.supabase_service
-        if supabase_service.is_configured():
-            try:
+        try:
+            supabase_service = request.app.state.supabase_service
+            if supabase_service and supabase_service.is_configured():
                 await supabase_service.store_event(data, score)
-            except Exception as e:
-                print(f"Failed to store in Supabase: {e}")
+        except Exception as e:
+            # Log but don't fail the request if Supabase storage fails
+            print(f"Warning: Failed to store in Supabase: {e}")
         
         return ScoreResponse(
             score=score,
@@ -53,8 +76,15 @@ async def receive_driving_data(data: DrivingData, request: Request):
             confidence=0.95
         )
     
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Catch any other unexpected errors
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Unexpected error processing driving data: {str(e)}"
+        )
 
 @router.get("/current_score", response_model=ScoreResponse)
 async def get_current_score(request: Request):

@@ -18,7 +18,15 @@ class MLService:
         self.model = None
         self.last_score = None
         self.ollama_url = os.getenv('OLLAMA_API_URL', 'http://localhost:11434')
-        self.model_path = os.getenv('MODEL_PATH', '../ml_model/trained_model.pkl')
+        
+        # Determine model path - handle both relative and absolute paths
+        # __file__ is in backend/services/ml_service.py, so we need to go up 2 levels
+        default_model_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+            'ml_model', 
+            'trained_model.pkl'
+        )
+        self.model_path = os.getenv('MODEL_PATH', default_model_path)
         
         # Try to load the trained model
         self._load_model()

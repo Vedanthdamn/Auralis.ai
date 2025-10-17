@@ -21,8 +21,13 @@ async def lifespan(app: FastAPI):
     global ml_service, supabase_service
     print("🚀 Starting DriveMind.ai Backend...")
     
+    # Update global variables (not local)
     ml_service = MLService()
     supabase_service = SupabaseService()
+    
+    # Update app state with initialized services
+    app.state.ml_service = ml_service
+    app.state.supabase_service = supabase_service
     
     print("✅ Services initialized successfully")
     
@@ -109,7 +114,6 @@ async def health_check():
         }
     }
 
-# Make services available to routes
-app.state.ml_service = ml_service
-app.state.supabase_service = supabase_service
+# Make broadcast available to routes
+# Note: ml_service and supabase_service are set during lifespan startup
 app.state.broadcast = broadcast_to_clients
