@@ -63,7 +63,7 @@ Perfect for:
 
 ## ✨ Features
 
-### Frontend (React + Vite)
+### Personal Dashboard
 - 📊 Real-time charts for speed, acceleration, and braking
 - 🎯 Live driving score display with animated gauge
 - 🤖 AI-generated feedback panel
@@ -72,14 +72,25 @@ Perfect for:
 - ✨ Smooth animations with Framer Motion
 - 🎨 Beautiful UI with TailwindCSS
 
+### Fleet Dashboard (NEW!)
+- 🚕 Multi-driver/vehicle tracking for fleet operators
+- 🏆 Driver rankings and leaderboard
+- 📈 Fleet-level statistics and insights
+- 🤖 AI-powered per-driver feedback using Mistral 7B
+- 📊 Performance trends and comparisons
+- 🎯 Identify top performers and drivers needing training
+- 🔄 Real-time data refresh (30s intervals)
+- 🌓 Full dark mode support
+
 ### Backend (FastAPI)
 - 🚀 High-performance async API
 - 🔌 WebSocket support for real-time data streaming
 - 🧠 ML inference for safety scoring
-- 🤖 Optional Ollama LLM integration for feedback
+- 🤖 Optional Ollama LLM integration for feedback (Mistral 7B)
 - 💾 Supabase database integration
 - 📝 Comprehensive API documentation
 - ✅ Request validation with Pydantic
+- 🚗 Fleet management endpoints
 
 ### Machine Learning
 - 🎓 Trained models using scikit-learn or TensorFlow
@@ -217,17 +228,42 @@ cd simulation
 python drive_simulator.py --duration 300 --interval 1.0
 ```
 
-### Access the Dashboard
+### Access the Dashboards
 
+#### Personal Dashboard
 Open your browser and navigate to:
 ```
-http://localhost:3000
+http://localhost:3000/dashboard
 ```
 
 You should see:
 - Real-time telemetry charts updating
 - Live driving score
 - AI-generated feedback (if Ollama is configured)
+
+#### Fleet Dashboard
+For fleet operators managing multiple drivers:
+```
+http://localhost:3000/dashboard/fleet
+```
+
+You should see:
+- Fleet statistics (total drivers, trips, average score)
+- Driver rankings and leaderboard
+- AI-generated fleet insights
+- Individual driver performance cards
+
+**Note**: The fleet dashboard requires database setup and sample data. See [Fleet Dashboard Guide](docs/FLEET_DASHBOARD.md) for setup instructions.
+
+### Quick Fleet Dashboard Setup
+
+```bash
+# Terminal 4: Generate sample fleet data (optional)
+cd scripts
+python generate_fleet_data.py --drivers 5 --sessions 10
+```
+
+This will create 5 sample drivers with 10 trips each to populate the fleet dashboard.
 
 ---
 
@@ -238,7 +274,12 @@ Auralis.ai/
 ├── frontend/                   # React frontend application
 │   ├── src/
 │   │   ├── components/        # React components
-│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Dashboard.jsx         # Personal dashboard
+│   │   │   ├── FleetDashboard.jsx    # Fleet dashboard (NEW)
+│   │   │   ├── DriverCard.jsx        # Driver card (NEW)
+│   │   │   ├── DriverRankings.jsx    # Rankings (NEW)
+│   │   │   ├── FleetStats.jsx        # Fleet stats (NEW)
+│   │   │   ├── FleetInsights.jsx     # AI insights (NEW)
 │   │   │   ├── Header.jsx
 │   │   │   ├── ScoreDisplay.jsx
 │   │   │   ├── TelemetryCharts.jsx
@@ -276,8 +317,13 @@ Auralis.ai/
 │   ├── drive_simulator.py    # Main simulator
 │   └── requirements.txt
 │
+├── scripts/                   # Utility scripts
+│   └── generate_fleet_data.py # Fleet data generator (NEW)
+│
 ├── docs/                      # Documentation
-│   └── database_schema.md    # Supabase schema
+│   ├── database_schema.md       # Base Supabase schema
+│   ├── fleet_database_schema.md # Fleet tables (NEW)
+│   └── FLEET_DASHBOARD.md       # Fleet guide (NEW)
 │
 └── README.md
 ```
@@ -306,23 +352,36 @@ PORT=8000
 
 ### Supabase Setup
 
+### Supabase Setup
+
 1. Create account at [supabase.com](https://supabase.com)
 2. Create a new project
-3. Run the SQL schema from `docs/database_schema.md`
-4. Copy your project URL and anon key to `.env`
+3. Run the SQL schema from `docs/database_schema.md` (required for all features)
+4. For fleet dashboard, also run `docs/fleet_database_schema.md` (adds drivers, vehicles, stats tables)
+5. Copy your project URL and anon key to `.env`
 
-### Ollama Setup (Optional)
+### Ollama Setup (Optional - for AI Feedback)
+
+For AI-powered feedback using Mistral 7B:
 
 ```bash
 # Install Ollama
 # Visit https://ollama.ai
 
-# Pull a model
+# Pull the Mistral model (recommended for fleet dashboard)
+ollama pull mistral
+
+# Alternatively, use llama2
 ollama pull llama2
 
 # Run Ollama service
 ollama serve
 ```
+
+The system will automatically use the configured model for:
+- Personal dashboard feedback
+- Per-driver performance analysis (fleet)
+- Fleet-level insights and recommendations
 
 ---
 
@@ -381,6 +440,35 @@ The project structure supports deployment to Raspberry Pi:
 - **Frontend**: Deploy to Vercel, Netlify, or any static host
 - **Backend**: Deploy to Railway, Render, or any Python-compatible platform
 - **Database**: Already using Supabase (cloud-based)
+
+---
+
+## 🚗 Fleet Dashboard
+
+The Fleet Dashboard is perfect for fleet operators (Uber, Ola, delivery services, etc.) who need to:
+- Monitor multiple drivers simultaneously
+- Track driver performance and safety
+- Identify training needs
+- Get AI-powered insights
+
+### Key Features
+- **Multi-Driver Tracking**: Monitor entire fleet at once
+- **Driver Rankings**: See top performers and those needing support
+- **AI Feedback**: Mistral 7B generates personalized driver insights
+- **Fleet Analytics**: Understand fleet-wide trends and patterns
+- **Scalable**: Easily add more drivers and vehicles
+
+### Quick Start
+
+1. **Setup Database**: Run SQL from `docs/fleet_database_schema.md`
+2. **Generate Sample Data**: 
+   ```bash
+   python scripts/generate_fleet_data.py --drivers 5 --sessions 10
+   ```
+3. **Access Dashboard**: Navigate to `http://localhost:3000/dashboard/fleet`
+
+### Documentation
+Complete guide available at [docs/FLEET_DASHBOARD.md](docs/FLEET_DASHBOARD.md)
 
 ---
 
