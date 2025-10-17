@@ -172,10 +172,24 @@ To verify the favicon is working:
 ✅ No cached external icons
 ✅ All assets are in the project repository
 
+## Design System Colors
+
+The favicon and theme colors use the primary brand color:
+- **Primary Blue**: `#3b82f6` (blue-500 in Tailwind)
+- **Dark Blue**: `#1d4ed8` (blue-700 in Tailwind)
+
+These colors are consistent with:
+- Tailwind configuration (`tailwind.config.js`)
+- Header component gradient: `from-primary-500 to-primary-700`
+- Theme color meta tag in `index.html`
+- Web manifest theme in `site.webmanifest`
+
+All favicon-related colors are derived from the Tailwind CSS design system to ensure consistency.
+
 ## Version Control
 
 All favicon assets and documentation are committed to the repository in:
-- `/frontend/public/` - Favicon source files
+- `/frontend/public/` - Favicon source files (6 images + 1 manifest)
 - `/frontend/index.html` - Updated HTML with correct references
 - `/frontend/FAVICON_CACHE_CLEAR.md` - Cache clearing guide
 - `/frontend/FAVICON_IMPLEMENTATION.md` - This implementation guide
