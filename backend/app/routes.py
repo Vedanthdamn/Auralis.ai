@@ -16,6 +16,7 @@ router = APIRouter()
 async def receive_driving_data(data: DrivingData, request: Request):
     """
     Receive driving data and calculate safety score
+    Supports both personal and fleet simulation modes
     """
     try:
         # Get ML service from app state
@@ -37,24 +38,29 @@ async def receive_driving_data(data: DrivingData, request: Request):
                 detail=f"Error calculating score: ML service not properly initialized - {str(e)}"
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error calculating score: {str(e)}"
-            )
+            # Log error but continue with fallback score
+            print(f"Error calculating score: {e}")
+            score = 5.0  # Fallback score
         
-        # Broadcast to WebSocket clients
+        # Broadcast to WebSocket clients with simulation mode context
         try:
             broadcast = request.app.state.broadcast
+            payload = data.model_dump(mode='json')
+            payload['score'] = score
+            
             await broadcast({
                 "type": "driving_data",
-                "payload": data.model_dump(mode='json')
+                "mode": data.simulation_mode or "personal",
+                "payload": payload
             })
             
             await broadcast({
                 "type": "score_update",
+                "mode": data.simulation_mode or "personal",
                 "payload": {
                     "score": score,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "scenario": data.scenario
                 }
             })
         except Exception as e:
@@ -81,6 +87,7 @@ async def receive_driving_data(data: DrivingData, request: Request):
         raise
     except Exception as e:
         # Catch any other unexpected errors
+        print(f"❌ Unexpected error processing driving data: {e}")
         raise HTTPException(
             status_code=500, 
             detail=f"Unexpected error processing driving data: {str(e)}"

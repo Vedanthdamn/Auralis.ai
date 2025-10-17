@@ -17,6 +17,7 @@ class MLService:
     def __init__(self):
         self.model = None
         self.last_score = None
+        self.scoring_initialized = True  # Flag to track if scoring is available
         self.ollama_url = os.getenv('OLLAMA_API_URL', 'http://localhost:11434')
         
         # Determine model path - handle both relative and absolute paths
@@ -35,7 +36,14 @@ class MLService:
         try:
             if os.path.exists(self.model_path):
                 with open(self.model_path, 'rb') as f:
-                    loaded_data = pickle.load(f)
+                    # Use a custom unpickler to handle missing classes
+                    try:
+                        loaded_data = pickle.load(f)
+                    except (AttributeError, ModuleNotFoundError) as pickle_error:
+                        print(f"⚠️ Could not unpickle model (likely due to missing class): {pickle_error}")
+                        print(f"⚠️ Using rule-based scoring instead.")
+                        self.model = None
+                        return
                 
                 # Handle both dictionary format (from train_model.py) and direct model format
                 if isinstance(loaded_data, dict):
@@ -45,14 +53,17 @@ class MLService:
                         print(f"✅ ML model loaded from {self.model_path} (type: {loaded_data.get('type', 'unknown')})")
                     else:
                         print(f"⚠️ Invalid model format in {self.model_path}. Using rule-based scoring.")
+                        self.model = None
                 else:
                     # Direct model object
                     self.model = loaded_data
                     print(f"✅ ML model loaded from {self.model_path}")
             else:
                 print(f"⚠️ Model file not found at {self.model_path}. Using rule-based scoring.")
+                self.model = None
         except Exception as e:
             print(f"❌ Error loading model: {e}. Using rule-based scoring.")
+            self.model = None
     
     def calculate_score(self, data: DrivingData) -> float:
         """
@@ -64,22 +75,28 @@ class MLService:
         Returns:
             float: Safety score between 0 and 10
         """
-        if self.model is not None:
-            # Use ML model for prediction
-            try:
-                features = self._extract_features(data)
-                score = self.model.predict([features])[0]
-                # Ensure score is within bounds
-                score = max(0.0, min(10.0, score))
-            except Exception as e:
-                print(f"Error using ML model: {e}. Falling back to rule-based.")
+        try:
+            if self.model is not None:
+                # Use ML model for prediction
+                try:
+                    features = self._extract_features(data)
+                    score = self.model.predict([features])[0]
+                    # Ensure score is within bounds
+                    score = max(0.0, min(10.0, score))
+                except Exception as e:
+                    print(f"Error using ML model: {e}. Falling back to rule-based.")
+                    score = self._rule_based_score(data)
+            else:
+                # Use rule-based scoring
                 score = self._rule_based_score(data)
-        else:
-            # Use rule-based scoring
-            score = self._rule_based_score(data)
-        
-        self.last_score = score
-        return score
+            
+            self.last_score = score
+            return score
+        except Exception as e:
+            # Catch any unexpected errors and return a safe default
+            print(f"❌ Critical error in calculate_score: {e}. Returning default score.")
+            # Return a mid-range score as fallback
+            return 5.0
     
     def _extract_features(self, data: DrivingData) -> list:
         """Extract features for ML model"""

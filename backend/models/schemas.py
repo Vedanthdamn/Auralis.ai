@@ -10,6 +10,8 @@ class DrivingData(BaseModel):
     steering_angle: float = Field(..., description="Steering angle in degrees")
     jerk: Optional[float] = Field(None, description="Rate of change of acceleration")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    simulation_mode: Optional[str] = Field(None, description="Simulation mode: 'personal' or 'fleet'")
+    scenario: Optional[str] = Field(None, description="Current driving scenario")
     
     class Config:
         json_schema_extra = {
@@ -19,7 +21,9 @@ class DrivingData(BaseModel):
                 "braking_intensity": 0.0,
                 "steering_angle": 5.2,
                 "jerk": 0.1,
-                "timestamp": "2024-01-01T12:00:00"
+                "timestamp": "2024-01-01T12:00:00",
+                "simulation_mode": "personal",
+                "scenario": "normal"
             }
         }
 

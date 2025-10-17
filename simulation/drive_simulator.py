@@ -152,7 +152,7 @@ class DrivingSimulator:
                 self.steering_angle += np.random.uniform(-10, 10)
                 self.steering_angle = np.clip(self.steering_angle, -40, 40)
     
-    def get_telemetry(self) -> Dict:
+    def get_telemetry(self, simulation_mode: str = 'personal') -> Dict:
         """Get current telemetry data"""
         return {
             'speed': float(self.speed),
@@ -160,7 +160,9 @@ class DrivingSimulator:
             'braking_intensity': float(self.braking_intensity),
             'steering_angle': float(self.steering_angle),
             'jerk': float(self.jerk),
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.utcnow().isoformat(),
+            'simulation_mode': simulation_mode,
+            'scenario': self.scenario
         }
     
     def send_telemetry(self, telemetry: Dict) -> Optional[Dict]:
@@ -181,15 +183,18 @@ class DrivingSimulator:
             print(f"❌ Connection error: {e}")
             return None
     
-    def run_simulation(self, duration: int = 300, update_interval: float = 1.0):
+    def run_simulation(self, duration: int = 300, update_interval: float = 1.0, 
+                       simulation_mode: str = 'personal'):
         """
         Run the driving simulation
         
         Args:
             duration: Total simulation time in seconds
             update_interval: How often to send data to backend (seconds)
+            simulation_mode: Simulation mode - 'personal' or 'fleet'
         """
-        print("🚗 Starting DriveMind.ai Driving Simulation")
+        mode_emoji = "🚗" if simulation_mode == 'personal' else "🚕"
+        print(f"{mode_emoji} Starting DriveMind.ai Driving Simulation ({simulation_mode.upper()} mode)")
         print(f"Duration: {duration}s, Update interval: {update_interval}s")
         print("=" * 50)
         
@@ -223,13 +228,14 @@ class DrivingSimulator:
                 
                 # Send data at specified interval
                 if current_time - last_update >= update_interval:
-                    telemetry = self.get_telemetry()
+                    telemetry = self.get_telemetry(simulation_mode)
                     
                     # Print current state
-                    print(f"🚙 Speed: {telemetry['speed']:6.1f} km/h | "
+                    print(f"{mode_emoji} [{simulation_mode.upper()}] Speed: {telemetry['speed']:6.1f} km/h | "
                           f"Accel: {telemetry['acceleration']:5.2f} m/s² | "
                           f"Brake: {telemetry['braking_intensity']:4.2f} | "
-                          f"Steer: {telemetry['steering_angle']:5.1f}°", end='')
+                          f"Steer: {telemetry['steering_angle']:5.1f}° | "
+                          f"Scenario: {telemetry['scenario']:10s}", end='')
                     
                     # Send to backend
                     response = self.send_telemetry(telemetry)
@@ -248,7 +254,7 @@ class DrivingSimulator:
         except KeyboardInterrupt:
             print("\n\n⚠️ Simulation interrupted by user")
         
-        print("\n✅ Simulation complete!")
+        print(f"\n✅ {simulation_mode.upper()} Simulation complete!")
 
 def main():
     import argparse
@@ -257,11 +263,14 @@ def main():
     parser.add_argument('--duration', type=int, default=300, help='Simulation duration in seconds (default: 300)')
     parser.add_argument('--interval', type=float, default=1.0, help='Data update interval in seconds (default: 1.0)')
     parser.add_argument('--api-url', type=str, default='http://localhost:8000/api', help='Backend API URL')
+    parser.add_argument('--mode', type=str, choices=['personal', 'fleet'], default='personal',
+                        help='Simulation mode: personal (default) or fleet')
     
     args = parser.parse_args()
     
     simulator = DrivingSimulator(api_url=args.api_url)
-    simulator.run_simulation(duration=args.duration, update_interval=args.interval)
+    simulator.run_simulation(duration=args.duration, update_interval=args.interval, 
+                           simulation_mode=args.mode)
 
 if __name__ == '__main__':
     main()
