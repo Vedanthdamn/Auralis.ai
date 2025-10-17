@@ -4,12 +4,13 @@ import FleetStats from './FleetStats'
 import DriverRankings from './DriverRankings'
 import FleetInsights from './FleetInsights'
 
-function FleetDashboard() {
+function FleetDashboard({ fleetData }) {
   const [fleetSummary, setFleetSummary] = useState(null)
   const [drivers, setDrivers] = useState([])
   const [insights, setInsights] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [realtimeData, setRealtimeData] = useState(null)
   
   useEffect(() => {
     // Fetch fleet data on component mount
@@ -20,6 +21,13 @@ function FleetDashboard() {
     
     return () => clearInterval(interval)
   }, [])
+  
+  useEffect(() => {
+    // Update real-time data when fleetData changes
+    if (fleetData) {
+      setRealtimeData(fleetData)
+    }
+  }, [fleetData])
   
   const fetchFleetData = async () => {
     try {
@@ -87,6 +95,58 @@ function FleetDashboard() {
   
   return (
     <div className="space-y-6">
+      {/* Real-time Fleet Simulation Data */}
+      {realtimeData && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="card bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+              <span className="mr-2">🚕</span>
+              Live Fleet Simulation Data
+            </h3>
+            <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm rounded-full flex items-center">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+              Live
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Speed</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {realtimeData.speed?.toFixed(1) || '0.0'} <span className="text-sm text-gray-500">km/h</span>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Acceleration</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {realtimeData.acceleration?.toFixed(2) || '0.00'} <span className="text-sm text-gray-500">m/s²</span>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Braking</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {((realtimeData.braking_intensity || 0) * 100).toFixed(0)}%
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Safety Score</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {realtimeData.score?.toFixed(1) || 'N/A'} <span className="text-sm text-gray-500">/10</span>
+              </div>
+            </div>
+          </div>
+          {realtimeData.scenario && (
+            <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+              <span className="font-medium">Scenario:</span> {realtimeData.scenario}
+            </div>
+          )}
+        </motion.div>
+      )}
+      
       {/* Fleet Statistics Cards */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
