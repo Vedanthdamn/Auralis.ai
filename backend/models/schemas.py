@@ -51,3 +51,50 @@ class SessionResponse(BaseModel):
     start_time: datetime
     driver_id: Optional[str]
     vehicle_id: Optional[str]
+
+# Fleet Management Schemas
+
+class DriverProfile(BaseModel):
+    """Driver profile information"""
+    driver_id: str
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    license_number: Optional[str] = None
+
+class VehicleProfile(BaseModel):
+    """Vehicle profile information"""
+    vehicle_id: str
+    make: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = None
+    license_plate: Optional[str] = None
+    vin: Optional[str] = None
+
+class DriverStats(BaseModel):
+    """Driver statistics for fleet dashboard"""
+    driver_id: str
+    driver_name: str
+    avg_score: float
+    trip_count: int
+    best_score: Optional[float] = None
+    worst_score: Optional[float] = None
+    last_trip_date: Optional[datetime] = None
+    rank: Optional[int] = None
+
+class FleetSummary(BaseModel):
+    """Fleet-level summary statistics"""
+    total_drivers: int
+    total_trips: int
+    fleet_avg_score: float
+    safest_driver: Optional[str] = None
+    safest_driver_score: Optional[float] = None
+    most_improved_driver: Optional[str] = None
+
+class DriverFeedback(BaseModel):
+    """AI-generated feedback for a driver"""
+    driver_id: str
+    driver_name: str
+    feedback: str
+    score: float
+    timestamp: datetime

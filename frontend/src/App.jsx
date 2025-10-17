@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Dashboard from './components/Dashboard'
+import FleetDashboard from './components/FleetDashboard'
 import Header from './components/Header'
 import Welcome from './components/Welcome'
 import Login from './components/Login'
@@ -46,6 +47,7 @@ function DashboardPage() {
           darkMode={darkMode} 
           setDarkMode={setDarkMode}
           isConnected={isConnected}
+          showFleetLink={true}
         />
         
         <motion.main
@@ -65,6 +67,32 @@ function DashboardPage() {
   )
 }
 
+function FleetDashboardPage() {
+  const [darkMode, setDarkMode] = useDarkMode()
+  
+  return (
+    <div className={darkMode ? 'dark' : ''}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        <Header 
+          darkMode={darkMode} 
+          setDarkMode={setDarkMode}
+          isConnected={false}
+          showFleetLink={true}
+        />
+        
+        <motion.main
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="container mx-auto px-4 py-8"
+        >
+          <FleetDashboard />
+        </motion.main>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [darkMode] = useDarkMode()
   
@@ -75,6 +103,7 @@ function App() {
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard/fleet" element={<FleetDashboardPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
