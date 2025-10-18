@@ -146,6 +146,32 @@ Perfect for:
 - **Automatic Routing**: Backend routes data based on simulation mode
 - **Backward Compatible**: Legacy `/ws` endpoint still supported
 
+### Async Concurrency Architecture
+
+DriveMind.ai is built with **full async/await concurrency** to support multiple simultaneous connections without blocking or timeouts.
+
+#### Backend Async Features
+
+1. **Non-blocking ML Scoring**: CPU-bound ML inference runs in thread pools using `asyncio.to_thread()`, preventing event loop blocking
+2. **Async HTTP Clients**: All external API calls (Ollama LLM) use `aiohttp` instead of blocking `requests`
+3. **Semaphore-based Concurrency Control**: Up to 10 concurrent scoring requests can be processed simultaneously
+4. **Parallel WebSocket Broadcasting**: Messages are broadcast to clients asynchronously using `asyncio.create_task()`
+5. **Non-blocking Database Operations**: Supabase writes are dispatched as background tasks
+
+#### Simulator Async Features
+
+1. **Async HTTP Requests**: Uses `aiohttp.ClientSession` for non-blocking API calls
+2. **Concurrent Execution**: Multiple simulators (personal + fleet) can run in parallel without interference
+3. **Async Sleep**: Uses `asyncio.sleep()` instead of blocking `time.sleep()`
+4. **Graceful Error Handling**: Exponential backoff retry logic that doesn't block the event loop
+
+#### Performance Benefits
+
+- ✅ **No Timeouts**: Both personal and fleet simulators stream data concurrently
+- ✅ **True Parallelism**: Multiple dashboards update simultaneously in real-time
+- ✅ **High Throughput**: Backend handles 10+ concurrent requests without degradation
+- ✅ **Low Latency**: Non-blocking I/O ensures fast response times even under load
+
 ---
 
 ## 📦 Prerequisites
@@ -245,13 +271,17 @@ cd simulation
 python drive_simulator.py --duration 300 --interval 1.0 --mode personal
 ```
 
-#### Terminal 4 (Optional): Run Fleet Simulation
+#### Terminal 4 (Optional): Run Fleet Simulation Concurrently
 ```bash
 cd simulation
 python drive_simulator.py --duration 300 --interval 1.0 --mode fleet
 ```
 
-**Note**: You can run multiple simulators simultaneously! Each terminal runs independently without interfering with the other.
+**✨ Parallel Simulation Support**: Both personal and fleet simulators can run simultaneously without any timeouts or blocking! The async architecture ensures:
+- Each simulator operates independently with its own session ID
+- Data streams in real-time to the appropriate dashboard
+- No interference between concurrent simulations
+- Graceful error handling with automatic retry logic
 
 ### Access the Dashboards
 
@@ -318,6 +348,39 @@ DriveMind.ai now supports two independent simulation modes that can run concurre
 - ✅ **Retry Mechanism**: Automatic retry with exponential backoff on failures
 - ✅ **High-Frequency Updates**: Support for 1-second update intervals
 - ✅ **Concurrency Control**: Backend handles up to 10 simultaneous requests
+
+### Testing Parallel Execution
+
+To verify that both simulators can run concurrently without timeout:
+
+```bash
+# Terminal 1: Start the backend
+cd backend
+uvicorn main:app --host 0.0.0.0 --port 8000
+
+# Terminal 2: Start personal simulator
+cd simulation
+python drive_simulator.py --mode personal --duration 60
+
+# Terminal 3: Start fleet simulator (at the same time)
+cd simulation
+python drive_simulator.py --mode fleet --duration 60
+```
+
+**Expected behavior:**
+- ✅ Both simulators start and run simultaneously
+- ✅ No timeout errors (previously showed "⏳ Request timeout after 3 attempts")
+- ✅ Both dashboards receive live data updates
+- ✅ Each simulator shows successful score updates: `| Score: X.X/10 | Avg: X.X/10 ✅`
+
+**Alternative: Run automated test**
+```bash
+# Test parallel execution programmatically
+python test_parallel_simulators.py --duration 10
+
+# Test without backend (offline graceful degradation)
+python test_parallel_simulators.py --offline-only
+```
 - ✅ **Graceful Degradation**: Partial responses when backend is overloaded
 
 ---

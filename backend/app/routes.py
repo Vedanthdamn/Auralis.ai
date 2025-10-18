@@ -16,9 +16,9 @@ router = APIRouter()
 async def _acquire_and_calculate_score(semaphore, ml_service, data):
     """Helper function to acquire semaphore and calculate score"""
     async with semaphore:
-        # Calculate driving score with error handling
+        # Calculate driving score with error handling (now async)
         try:
-            score = ml_service.calculate_score(data)
+            score = await ml_service.calculate_score(data)
         except AttributeError as e:
             raise HTTPException(
                 status_code=500,
