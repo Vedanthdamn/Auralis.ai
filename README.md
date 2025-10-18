@@ -294,7 +294,15 @@ DriveMind.ai now supports two independent simulation modes that can run concurre
 - **Icon**: 🚕
 - **WebSocket Channel**: Broadcasts with `mode: "fleet"`
 
-### Running Multiple Simulations
+### Key Features
+- ✅ **Independent Sessions**: Each mode maintains its own session ID and statistics
+- ✅ **Concurrent Execution**: Run both modes simultaneously without interference
+- ✅ **Retry Mechanism**: Automatic retry with exponential backoff on failures
+- ✅ **High-Frequency Updates**: Support for 1-second update intervals
+- ✅ **Concurrency Control**: Backend handles up to 10 simultaneous requests
+- ✅ **Graceful Degradation**: Partial responses when backend is overloaded
+
+---
 
 You can run both modes simultaneously in different terminals:
 
@@ -316,6 +324,13 @@ cd frontend
 npm run dev
 ```
 
+**Features:**
+- Each simulator runs independently with its own session ID
+- Retry mechanism handles temporary network issues or backend overload
+- Both modes can post data at 1-second intervals without timing out
+- Separate session tracking ensures scores don't interfere with each other
+- Backend handles concurrent requests using semaphore-based rate limiting (up to 10 concurrent requests)
+
 ### Simulator Options
 
 ```bash
@@ -323,20 +338,70 @@ python drive_simulator.py [OPTIONS]
 
 Options:
   --duration SECONDS    Simulation duration (default: 300)
-  --interval SECONDS    Data update interval (default: 1.0)
+  --interval SECONDS    Data update interval in seconds (default: 1.0, supports as low as 1.0s)
   --mode MODE          Simulation mode: personal or fleet (default: personal)
   --api-url URL        Backend API URL (default: http://localhost:8000/api)
 ```
 
+**Retry Behavior:**
+- Automatic retry on timeout or connection errors
+- Exponential backoff: 0.5s, 1.0s, 2.0s between retries
+- Maximum 3 retry attempts per request
+- Clear console feedback on retry attempts
+
+**Session Statistics:**
+Each simulation displays:
+- Current score for each update
+- Running average score across the session
+- Session summary at completion (total updates, avg/best/worst scores)
+
 **📚 For detailed simulation guide, troubleshooting, and advanced usage, see [SIMULATION_GUIDE.md](SIMULATION_GUIDE.md)**
+
+---
+
+## 🔧 Troubleshooting
+
+### Timeout Issues
+
+If you experience timeout errors:
+
+1. **Check Backend Status**: Ensure the backend is running and healthy at `http://localhost:8000/health`
+
+2. **Reduce Update Interval**: Try increasing `--interval` to 2.0 or 3.0 seconds:
+   ```bash
+   python drive_simulator.py --interval 2.0
+   ```
+
+3. **Monitor Backend Logs**: Check for error messages in the backend terminal
+
+4. **Verify Concurrency Limit**: With many simulators, adjust `MAX_CONCURRENT_REQUESTS` in `backend/main.py`
+
+5. **Test Retry Mechanism**: The simulator will show retry attempts in console:
+   ```
+   ⏳ Request timeout, retrying in 1.0s (attempt 2/3)...
+   ```
+
+### Backend Overload
+
+If backend returns partial responses (confidence < 0.95):
+- Backend is temporarily overloaded
+- Simulator receives default score (5.0) to maintain operation
+- Consider reducing number of concurrent simulators
+- Or increase `MAX_CONCURRENT_REQUESTS` value
+
+---
 
 ### Performance Optimizations
 
 - **Async Endpoints**: All data endpoints are asynchronous for high throughput
 - **Non-Blocking WebSocket**: WebSocket connections don't block HTTP requests
 - **Error Recovery**: Automatic fallback to rule-based scoring if ML model fails
-- **Timeout Handling**: 5-second timeout for API requests with graceful degradation
-- **Concurrent Support**: Handle multiple 1-second interval requests without timeouts
+- **Retry Mechanism**: Simulator automatically retries failed requests with exponential backoff (0.5s, 1.0s, 2.0s)
+- **Timeout Handling**: 10-second timeout for API requests with graceful degradation
+- **Concurrent Support**: Semaphore-based concurrency control handles up to 10 simultaneous requests
+- **Partial Responses**: Backend returns partial responses (score 5.0, confidence 0.5) when overloaded
+- **Session Tracking**: Each simulator run gets unique session ID for independent tracking
+- **Background Tasks**: WebSocket broadcasting and database storage run asynchronously
 
 ---
 
@@ -508,6 +573,7 @@ WebSocket broadcasts include mode context:
 {
   "type": "driving_data",
   "mode": "personal",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
   "payload": {
     "speed": 60.5,
     "acceleration": 0.5,
@@ -516,6 +582,16 @@ WebSocket broadcasts include mode context:
   }
 }
 ```
+
+Partial response when backend is overloaded:
+```json
+{
+  "score": 5.0,
+  "timestamp": "2025-10-17T20:30:00.000000",
+  "confidence": 0.5
+}
+```
+(Lower confidence value indicates a partial/default response)
 
 ---
 

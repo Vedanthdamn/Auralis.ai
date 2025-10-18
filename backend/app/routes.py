@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from datetime import datetime
+import asyncio
 from models.schemas import (
     DrivingData, 
     ScoreResponse, 
@@ -17,10 +18,12 @@ async def receive_driving_data(data: DrivingData, request: Request):
     """
     Receive driving data and calculate safety score
     Supports both personal and fleet simulation modes
+    Uses semaphore for concurrency control to handle multiple simulators
     """
     try:
-        # Get ML service from app state
+        # Get services from app state
         ml_service = request.app.state.ml_service
+        semaphore = request.app.state.request_semaphore
         
         # Check if ML service is available
         if ml_service is None:
@@ -29,49 +32,67 @@ async def receive_driving_data(data: DrivingData, request: Request):
                 detail="ML service not initialized. Please check server logs."
             )
         
-        # Calculate driving score with error handling
+        # Try to acquire semaphore with timeout
         try:
-            score = ml_service.calculate_score(data)
-        except AttributeError as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error calculating score: ML service not properly initialized - {str(e)}"
+            # Non-blocking acquire with asyncio timeout
+            async with asyncio.timeout(2.0):  # Wait max 2 seconds for slot
+                async with semaphore:
+                    # Calculate driving score with error handling
+                    try:
+                        score = ml_service.calculate_score(data)
+                    except AttributeError as e:
+                        raise HTTPException(
+                            status_code=500,
+                            detail=f"Error calculating score: ML service not properly initialized - {str(e)}"
+                        )
+                    except Exception as e:
+                        # Log error but continue with fallback score
+                        print(f"Error calculating score: {e}")
+                        score = 5.0  # Fallback score
+                    
+        except asyncio.TimeoutError:
+            # Backend is too busy, return partial response
+            print(f"⚠️ Backend busy, returning partial response for session {data.session_id}")
+            return ScoreResponse(
+                score=5.0,  # Default mid-range score when busy
+                timestamp=datetime.utcnow(),
+                confidence=0.5  # Lower confidence indicates partial response
             )
-        except Exception as e:
-            # Log error but continue with fallback score
-            print(f"Error calculating score: {e}")
-            score = 5.0  # Fallback score
         
-        # Broadcast to WebSocket clients with simulation mode context
+        # Broadcast to WebSocket clients with simulation mode context (non-blocking)
         try:
             broadcast = request.app.state.broadcast
             payload = data.model_dump(mode='json')
             payload['score'] = score
             
-            await broadcast({
+            # Use create_task for non-blocking broadcast
+            asyncio.create_task(broadcast({
                 "type": "driving_data",
                 "mode": data.simulation_mode or "personal",
+                "session_id": data.session_id,
                 "payload": payload
-            })
+            }))
             
-            await broadcast({
+            asyncio.create_task(broadcast({
                 "type": "score_update",
                 "mode": data.simulation_mode or "personal",
+                "session_id": data.session_id,
                 "payload": {
                     "score": score,
                     "timestamp": datetime.utcnow().isoformat(),
                     "scenario": data.scenario
                 }
-            })
+            }))
         except Exception as e:
             # Log but don't fail the request if broadcasting fails
             print(f"Warning: Failed to broadcast to WebSocket clients: {e}")
         
-        # Store in database if Supabase is configured
+        # Store in database if Supabase is configured (non-blocking)
         try:
             supabase_service = request.app.state.supabase_service
             if supabase_service and supabase_service.is_configured():
-                await supabase_service.store_event(data, score)
+                # Use create_task for non-blocking database storage
+                asyncio.create_task(supabase_service.store_event(data, score))
         except Exception as e:
             # Log but don't fail the request if Supabase storage fails
             print(f"Warning: Failed to store in Supabase: {e}")
