@@ -5,6 +5,8 @@ from typing import Optional
 from datetime import datetime
 from models.schemas import DrivingData
 import requests
+import asyncio
+import aiohttp
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -65,10 +67,11 @@ class MLService:
             print(f"❌ Error loading model: {e}. Using rule-based scoring.")
             self.model = None
     
-    def calculate_score(self, data: DrivingData) -> float:
+    async def calculate_score(self, data: DrivingData) -> float:
         """
-        Calculate driving safety score from telemetry data
+        Calculate driving safety score from telemetry data (async version)
         Optimized for fast execution to handle high-frequency requests
+        Uses asyncio.to_thread() to offload CPU-bound work to avoid blocking the event loop
         
         Args:
             data: DrivingData object containing telemetry
@@ -78,19 +81,18 @@ class MLService:
         """
         try:
             if self.model is not None:
-                # Use ML model for prediction
+                # Use ML model for prediction - run in thread pool to avoid blocking
                 try:
-                    features = self._extract_features(data)
-                    # Direct prediction without extra validation for speed
-                    score = float(self.model.predict([features])[0])
+                    # Offload CPU-bound work to thread pool
+                    score = await asyncio.to_thread(self._calculate_ml_score, data)
                     # Ensure score is within bounds
                     score = max(0.0, min(10.0, score))
                 except Exception as e:
                     print(f"Error using ML model: {e}. Falling back to rule-based.")
-                    score = self._rule_based_score(data)
+                    score = await asyncio.to_thread(self._rule_based_score, data)
             else:
-                # Use optimized rule-based scoring
-                score = self._rule_based_score(data)
+                # Use optimized rule-based scoring in thread pool
+                score = await asyncio.to_thread(self._rule_based_score, data)
             
             self.last_score = score
             return score
@@ -99,6 +101,15 @@ class MLService:
             print(f"❌ Critical error in calculate_score: {e}. Returning default score.")
             # Return a mid-range score as fallback
             return 5.0
+    
+    def _calculate_ml_score(self, data: DrivingData) -> float:
+        """
+        Internal method for ML model prediction (synchronous, runs in thread pool)
+        """
+        features = self._extract_features(data)
+        # Direct prediction without extra validation for speed
+        score = float(self.model.predict([features])[0])
+        return score
     
     def _extract_features(self, data: DrivingData) -> list:
         """Extract features for ML model"""
@@ -182,7 +193,7 @@ class MLService:
         return self._generate_rule_based_feedback(score, data)
     
     async def _generate_ollama_feedback(self, score: float, data: DrivingData) -> Optional[str]:
-        """Generate feedback using Ollama LLM"""
+        """Generate feedback using Ollama LLM (async version using aiohttp)"""
         try:
             prompt = f"""You are a professional driving instructor analyzing driving behavior.
 
@@ -195,19 +206,19 @@ Current Driving Metrics:
 
 Provide brief, constructive feedback (2-3 sentences) to help improve driving safety. Be encouraging but specific about areas of concern."""
 
-            response = requests.post(
-                f"{self.ollama_url}/api/generate",
-                json={
-                    "model": "llama2",
-                    "prompt": prompt,
-                    "stream": False
-                },
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                return result.get('response', '').strip()
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.ollama_url}/api/generate",
+                    json={
+                        "model": "llama2",
+                        "prompt": prompt,
+                        "stream": False
+                    },
+                    timeout=aiohttp.ClientTimeout(total=10)
+                ) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        return result.get('response', '').strip()
         except Exception as e:
             print(f"Ollama generation error: {e}")
         
@@ -291,7 +302,7 @@ Provide brief, constructive feedback (2-3 sentences) to help improve driving saf
         return " ".join(feedback_parts)
     
     async def _generate_ollama_driver_feedback(self, driver_stats: dict) -> Optional[str]:
-        """Generate feedback for a driver using Ollama LLM"""
+        """Generate feedback for a driver using Ollama LLM (async version using aiohttp)"""
         try:
             avg_score = driver_stats.get('avg_score', 0)
             trip_count = driver_stats.get('trip_count', 0)
@@ -313,27 +324,27 @@ Provide brief, actionable feedback (1-2 sentences) to help this driver improve. 
             # Try mistral:7b-instruct-q4_0 first, then fall back to mistral:latest
             models_to_try = ["mistral:7b-instruct-q4_0", "mistral:latest", "mistral"]
             
-            for model in models_to_try:
-                try:
-                    response = requests.post(
-                        f"{self.ollama_url}/api/generate",
-                        json={
-                            "model": model,
-                            "prompt": prompt,
-                            "stream": False
-                        },
-                        timeout=15
-                    )
-                    
-                    if response.status_code == 200:
-                        result = response.json()
-                        feedback = result.get('response', '').strip()
-                        if feedback:
-                            print(f"✅ Generated driver feedback using model: {model}")
-                            return feedback
-                except Exception as model_error:
-                    print(f"Failed to use model {model}: {model_error}")
-                    continue
+            async with aiohttp.ClientSession() as session:
+                for model in models_to_try:
+                    try:
+                        async with session.post(
+                            f"{self.ollama_url}/api/generate",
+                            json={
+                                "model": model,
+                                "prompt": prompt,
+                                "stream": False
+                            },
+                            timeout=aiohttp.ClientTimeout(total=15)
+                        ) as response:
+                            if response.status == 200:
+                                result = await response.json()
+                                feedback = result.get('response', '').strip()
+                                if feedback:
+                                    print(f"✅ Generated driver feedback using model: {model}")
+                                    return feedback
+                    except Exception as model_error:
+                        print(f"Failed to use model {model}: {model_error}")
+                        continue
             
         except Exception as e:
             print(f"Ollama driver feedback generation error: {e}")
@@ -386,7 +397,7 @@ Provide brief, actionable feedback (1-2 sentences) to help this driver improve. 
         return " ".join(insights_parts)
     
     async def _generate_ollama_fleet_insights(self, fleet_summary: dict, driver_stats: list) -> Optional[str]:
-        """Generate fleet insights using Ollama LLM"""
+        """Generate fleet insights using Ollama LLM (async version using aiohttp)"""
         try:
             total_drivers = fleet_summary.get('total_drivers', 0)
             fleet_avg = fleet_summary.get('fleet_avg_score', 0)
@@ -410,27 +421,27 @@ Provide brief, actionable insights (2-3 sentences) for fleet management. Focus o
             # Try mistral:7b-instruct-q4_0 first, then fall back to mistral:latest
             models_to_try = ["mistral:7b-instruct-q4_0", "mistral:latest", "mistral"]
             
-            for model in models_to_try:
-                try:
-                    response = requests.post(
-                        f"{self.ollama_url}/api/generate",
-                        json={
-                            "model": model,
-                            "prompt": prompt,
-                            "stream": False
-                        },
-                        timeout=15
-                    )
-                    
-                    if response.status_code == 200:
-                        result = response.json()
-                        insights = result.get('response', '').strip()
-                        if insights:
-                            print(f"✅ Generated fleet insights using model: {model}")
-                            return insights
-                except Exception as model_error:
-                    print(f"Failed to use model {model}: {model_error}")
-                    continue
+            async with aiohttp.ClientSession() as session:
+                for model in models_to_try:
+                    try:
+                        async with session.post(
+                            f"{self.ollama_url}/api/generate",
+                            json={
+                                "model": model,
+                                "prompt": prompt,
+                                "stream": False
+                            },
+                            timeout=aiohttp.ClientTimeout(total=15)
+                        ) as response:
+                            if response.status == 200:
+                                result = await response.json()
+                                insights = result.get('response', '').strip()
+                                if insights:
+                                    print(f"✅ Generated fleet insights using model: {model}")
+                                    return insights
+                    except Exception as model_error:
+                        print(f"Failed to use model {model}: {model_error}")
+                        continue
             
         except Exception as e:
             print(f"Ollama fleet insights generation error: {e}")

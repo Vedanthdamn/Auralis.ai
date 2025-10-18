@@ -1,10 +1,10 @@
 """
 Realistic driving simulation that generates telemetry data
-and sends it to the backend API in real-time
+and sends it to the backend API in real-time using async HTTP requests
 """
 import numpy as np
-import time
-import requests
+import asyncio
+import aiohttp
 import json
 from datetime import datetime
 from typing import Dict, Optional
@@ -169,9 +169,9 @@ class DrivingSimulator:
             'scenario': self.scenario
         }
     
-    def send_telemetry(self, telemetry: Dict, max_retries: int = 3) -> Optional[Dict]:
+    async def send_telemetry(self, telemetry: Dict, max_retries: int = 3) -> Optional[Dict]:
         """
-        Send telemetry to backend API with retry mechanism
+        Send telemetry to backend API with retry mechanism (async version)
         
         Args:
             telemetry: Telemetry data to send
@@ -182,56 +182,67 @@ class DrivingSimulator:
         """
         retry_delays = [0.5, 1.0, 2.0]  # Exponential backoff delays
         
-        for attempt in range(max_retries):
-            try:
-                response = requests.post(
-                    f"{self.api_url}/driving_data",
-                    json=telemetry,
-                    timeout=10  # Increased timeout to 10 seconds
-                )
-                
-                if response.status_code == 200:
-                    return response.json()
-                elif response.status_code == 503:
-                    # Backend is busy, retry
+        timeout = aiohttp.ClientTimeout(total=10)  # 10 second timeout
+        
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            for attempt in range(max_retries):
+                try:
+                    async with session.post(
+                        f"{self.api_url}/driving_data",
+                        json=telemetry
+                    ) as response:
+                        if response.status == 200:
+                            return await response.json()
+                        elif response.status == 503:
+                            # Backend is busy, retry
+                            if attempt < max_retries - 1:
+                                delay = retry_delays[attempt]
+                                print(f"⏳ Backend busy, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                                await asyncio.sleep(delay)
+                                continue
+                            else:
+                                print(f"❌ Backend busy after {max_retries} attempts")
+                                return None
+                        else:
+                            error_text = await response.text()
+                            print(f"❌ Error: {response.status} - {error_text}")
+                            return None
+                        
+                except asyncio.TimeoutError:
                     if attempt < max_retries - 1:
                         delay = retry_delays[attempt]
-                        print(f"⏳ Backend busy, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
-                        time.sleep(delay)
+                        print(f"⏳ Request timeout, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                        await asyncio.sleep(delay)
                         continue
                     else:
-                        print(f"❌ Backend busy after {max_retries} attempts")
+                        print(f"❌ Request timeout after {max_retries} attempts")
                         return None
-                else:
-                    print(f"❌ Error: {response.status_code} - {response.text}")
-                    return None
-                    
-            except requests.exceptions.Timeout:
-                if attempt < max_retries - 1:
-                    delay = retry_delays[attempt]
-                    print(f"⏳ Request timeout, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
-                    time.sleep(delay)
-                    continue
-                else:
-                    print(f"❌ Request timeout after {max_retries} attempts")
-                    return None
-                    
-            except requests.exceptions.RequestException as e:
-                if attempt < max_retries - 1:
-                    delay = retry_delays[attempt]
-                    print(f"⏳ Connection error: {e}, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
-                    time.sleep(delay)
-                    continue
-                else:
-                    print(f"❌ Connection error after {max_retries} attempts: {e}")
-                    return None
+                        
+                except aiohttp.ClientError as e:
+                    if attempt < max_retries - 1:
+                        delay = retry_delays[attempt]
+                        print(f"⏳ Connection error: {e}, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        print(f"❌ Connection error after {max_retries} attempts: {e}")
+                        return None
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        delay = retry_delays[attempt]
+                        print(f"⏳ Unexpected error: {e}, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        print(f"❌ Unexpected error after {max_retries} attempts: {e}")
+                        return None
         
         return None
     
-    def run_simulation(self, duration: int = 300, update_interval: float = 1.0, 
+    async def run_simulation(self, duration: int = 300, update_interval: float = 1.0, 
                        simulation_mode: str = 'personal'):
         """
-        Run the driving simulation
+        Run the driving simulation (async version)
         
         Args:
             duration: Total simulation time in seconds
@@ -250,7 +261,7 @@ class DrivingSimulator:
         print(f"Duration: {duration}s, Update interval: {update_interval}s")
         print("=" * 50)
         
-        start_time = time.time()
+        start_time = asyncio.get_event_loop().time()
         last_update = start_time
         scenario_duration = 0
         scenario_switch_time = np.random.uniform(10, 30)
@@ -260,8 +271,8 @@ class DrivingSimulator:
         print(f"📍 Scenario: {self.scenario}")
         
         try:
-            while time.time() - start_time < duration:
-                current_time = time.time()
+            while asyncio.get_event_loop().time() - start_time < duration:
+                current_time = asyncio.get_event_loop().time()
                 dt = self.time_step
                 
                 # Switch scenario periodically
@@ -290,8 +301,8 @@ class DrivingSimulator:
                           f"Steer: {telemetry['steering_angle']:5.1f}° | "
                           f"Scenario: {telemetry['scenario']:10s}", end='')
                     
-                    # Send to backend with retry
-                    response = self.send_telemetry(telemetry)
+                    # Send to backend with retry (async)
+                    response = await self.send_telemetry(telemetry)
                     
                     if response:
                         score = response.get('score', 0)
@@ -303,8 +314,8 @@ class DrivingSimulator:
                     
                     last_update = current_time
                 
-                # Sleep to maintain update rate
-                time.sleep(dt)
+                # Sleep to maintain update rate (async)
+                await asyncio.sleep(dt)
         
         except KeyboardInterrupt:
             print("\n\n⚠️ Simulation interrupted by user")
@@ -319,7 +330,7 @@ class DrivingSimulator:
             print(f"Best score: {max(self.session_scores):.2f}/10")
             print(f"Worst score: {min(self.session_scores):.2f}/10")
 
-def main():
+async def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='DriveMind.ai Driving Simulator')
@@ -332,8 +343,8 @@ def main():
     args = parser.parse_args()
     
     simulator = DrivingSimulator(api_url=args.api_url)
-    simulator.run_simulation(duration=args.duration, update_interval=args.interval, 
+    await simulator.run_simulation(duration=args.duration, update_interval=args.interval, 
                            simulation_mode=args.mode)
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
