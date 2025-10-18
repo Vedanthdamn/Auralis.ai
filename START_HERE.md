@@ -167,10 +167,10 @@ pip install -r requirements.txt
 
 ## 📚 More Help
 
-- **Quick Guide:** [PYTHON_313_QUICK_START.md](PYTHON_313_QUICK_START.md)
 - **Detailed Guide:** [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
-- **Technical Details:** [PYTHON_3.13_UPGRADE.md](PYTHON_3.13_UPGRADE.md)
 - **Main README:** [README.md](README.md)
+- **Simulation Guide:** [SIMULATION_GUIDE.md](SIMULATION_GUIDE.md)
+- **Features List:** [FEATURES.md](FEATURES.md)
 
 ---
 

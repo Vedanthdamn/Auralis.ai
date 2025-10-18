@@ -46,8 +46,7 @@ Experience a completely revamped, futuristic dashboard inspired by Tesla and Luc
 > ### 📖 Installation Guides (Pick One)
 > 
 > 1. **[START_HERE.md](START_HERE.md)** ← **Best place to start!** Quick explanation + step-by-step
-> 2. **[PYTHON_313_QUICK_START.md](PYTHON_313_QUICK_START.md)** ← 3-step quick start
-> 3. **[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)** ← Comprehensive guide with troubleshooting
+> 2. **[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)** ← Comprehensive guide with troubleshooting
 > 
 > **What was fixed:** Updated numpy from 2.1.0 → 2.0.2 for TensorFlow 2.18.0 compatibility.
 
@@ -230,7 +229,7 @@ DriveMind.ai is built with **full async/await concurrency** to support multiple 
 
 ## 🚀 Installation
 
-> **🎉 Python 3.13 Users:** Installation issues are **FIXED**! See [PYTHON_313_QUICK_START.md](PYTHON_313_QUICK_START.md) for the quick guide.
+> **🎉 Python 3.13 Users:** Installation issues are **FIXED**! See [START_HERE.md](START_HERE.md) for a quick start guide.
 > 
 > **📚 Comprehensive Guide:** For detailed installation instructions and troubleshooting, see [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md).
 > 

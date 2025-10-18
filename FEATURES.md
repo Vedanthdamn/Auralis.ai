@@ -119,7 +119,7 @@
 - [x] DEVELOPMENT.md (dev workflow)
 - [x] database_schema.md (SQL schema)
 - [x] api_example.py (code examples)
-- [x] PROJECT_SUMMARY.md (project overview)
+- [x] README.md (comprehensive project overview)
 
 ### Code Documentation
 - [x] Inline comments in all files
