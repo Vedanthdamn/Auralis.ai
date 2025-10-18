@@ -16,8 +16,8 @@ function DashboardPage() {
   const [feedback, setFeedback] = useState('')
   const [isConnected, setIsConnected] = useState(false)
   
-  // WebSocket connection for real-time data
-  const { lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws')
+  // WebSocket connection for personal dashboard - dedicated endpoint
+  const { lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws/personal')
   
   useEffect(() => {
     setIsConnected(connectionStatus === 'connected')
@@ -27,17 +27,13 @@ function DashboardPage() {
     if (lastMessage) {
       try {
         const data = JSON.parse(lastMessage)
-        // Filter to only show personal mode data (or data without mode specified for backward compatibility)
-        const isPersonalMode = !data.mode || data.mode === 'personal'
-        
-        if (isPersonalMode) {
-          if (data.type === 'driving_data') {
-            setDrivingData(data.payload)
-          } else if (data.type === 'score_update') {
-            setScore(data.payload.score)
-          } else if (data.type === 'feedback') {
-            setFeedback(data.payload.feedback)
-          }
+        // Process all messages from personal endpoint
+        if (data.type === 'driving_data') {
+          setDrivingData(data.payload)
+        } else if (data.type === 'score_update') {
+          setScore(data.payload.score)
+        } else if (data.type === 'feedback') {
+          setFeedback(data.payload.feedback)
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error)
@@ -77,8 +73,8 @@ function FleetDashboardPage() {
   const [fleetData, setFleetData] = useState(null)
   const [isConnected, setIsConnected] = useState(false)
   
-  // WebSocket connection for real-time fleet data
-  const { lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws')
+  // WebSocket connection for fleet dashboard - dedicated endpoint
+  const { lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws/fleet')
   
   useEffect(() => {
     setIsConnected(connectionStatus === 'connected')
@@ -88,13 +84,9 @@ function FleetDashboardPage() {
     if (lastMessage) {
       try {
         const data = JSON.parse(lastMessage)
-        // Filter to only show fleet mode data
-        const isFleetMode = data.mode === 'fleet'
-        
-        if (isFleetMode) {
-          if (data.type === 'driving_data') {
-            setFleetData(data.payload)
-          }
+        // Process all messages from fleet endpoint
+        if (data.type === 'driving_data') {
+          setFleetData(data.payload)
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error)

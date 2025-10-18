@@ -13,7 +13,10 @@ from models.schemas import DrivingData
 # Global services
 ml_service = None
 supabase_service = None
-active_connections = []
+
+# Separate connection pools for personal and fleet dashboards
+personal_connections = []
+fleet_connections = []
 
 # Concurrency control for handling multiple simulators
 request_semaphore = None
@@ -63,12 +66,12 @@ app.add_middleware(
 # Include routes
 app.include_router(router, prefix="/api")
 
-# WebSocket endpoint for real-time data
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+# WebSocket endpoint for personal dashboard
+@app.websocket("/ws/personal")
+async def personal_websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    active_connections.append(websocket)
-    print(f"✅ WebSocket client connected. Total connections: {len(active_connections)}")
+    personal_connections.append(websocket)
+    print(f"✅ Personal WebSocket client connected. Total personal connections: {len(personal_connections)}")
     
     try:
         while True:
@@ -77,30 +80,89 @@ async def websocket_endpoint(websocket: WebSocket):
             # Echo back or process if needed
             await websocket.send_text(json.dumps({
                 "type": "ack",
-                "message": "Message received"
+                "message": "Personal dashboard connected"
             }))
     except WebSocketDisconnect:
-        active_connections.remove(websocket)
-        print(f"❌ WebSocket client disconnected. Total connections: {len(active_connections)}")
+        personal_connections.remove(websocket)
+        print(f"❌ Personal WebSocket client disconnected. Total personal connections: {len(personal_connections)}")
     except Exception as e:
-        print(f"❌ WebSocket error: {e}")
-        if websocket in active_connections:
-            active_connections.remove(websocket)
+        print(f"❌ Personal WebSocket error: {e}")
+        if websocket in personal_connections:
+            personal_connections.remove(websocket)
+
+# WebSocket endpoint for fleet dashboard
+@app.websocket("/ws/fleet")
+async def fleet_websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    fleet_connections.append(websocket)
+    print(f"✅ Fleet WebSocket client connected. Total fleet connections: {len(fleet_connections)}")
+    
+    try:
+        while True:
+            # Keep connection alive and handle any incoming messages
+            data = await websocket.receive_text()
+            # Echo back or process if needed
+            await websocket.send_text(json.dumps({
+                "type": "ack",
+                "message": "Fleet dashboard connected"
+            }))
+    except WebSocketDisconnect:
+        fleet_connections.remove(websocket)
+        print(f"❌ Fleet WebSocket client disconnected. Total fleet connections: {len(fleet_connections)}")
+    except Exception as e:
+        print(f"❌ Fleet WebSocket error: {e}")
+        if websocket in fleet_connections:
+            fleet_connections.remove(websocket)
+
+# Legacy WebSocket endpoint (backward compatibility)
+@app.websocket("/ws")
+async def legacy_websocket_endpoint(websocket: WebSocket):
+    """Legacy endpoint - broadcasts to both personal and fleet for backward compatibility"""
+    await websocket.accept()
+    personal_connections.append(websocket)
+    print(f"⚠️ Legacy WebSocket client connected (will receive personal data). Total personal connections: {len(personal_connections)}")
+    
+    try:
+        while True:
+            # Keep connection alive and handle any incoming messages
+            data = await websocket.receive_text()
+            # Echo back or process if needed
+            await websocket.send_text(json.dumps({
+                "type": "ack",
+                "message": "Message received (legacy endpoint)"
+            }))
+    except WebSocketDisconnect:
+        personal_connections.remove(websocket)
+        print(f"❌ Legacy WebSocket client disconnected. Total personal connections: {len(personal_connections)}")
+    except Exception as e:
+        print(f"❌ Legacy WebSocket error: {e}")
+        if websocket in personal_connections:
+            personal_connections.remove(websocket)
 
 async def broadcast_to_clients(message: dict):
-    """Broadcast message to all connected WebSocket clients"""
+    """Broadcast message to appropriate WebSocket clients based on mode"""
+    mode = message.get('mode', 'personal')
+    
+    # Select the appropriate connection pool
+    if mode == 'fleet':
+        connections = fleet_connections
+        connection_type = "fleet"
+    else:
+        connections = personal_connections
+        connection_type = "personal"
+    
     disconnected = []
-    for connection in active_connections:
+    for connection in connections:
         try:
             await connection.send_text(json.dumps(message))
         except Exception as e:
-            print(f"Error broadcasting to client: {e}")
+            print(f"Error broadcasting to {connection_type} client: {e}")
             disconnected.append(connection)
     
     # Remove disconnected clients
     for conn in disconnected:
-        if conn in active_connections:
-            active_connections.remove(conn)
+        if conn in connections:
+            connections.remove(conn)
 
 @app.get("/")
 async def root():
@@ -108,7 +170,11 @@ async def root():
         "message": "DriveMind.ai API is running",
         "version": "1.0.0",
         "status": "operational",
-        "websocket_connections": len(active_connections)
+        "websocket_connections": {
+            "personal": len(personal_connections),
+            "fleet": len(fleet_connections),
+            "total": len(personal_connections) + len(fleet_connections)
+        }
     }
 
 @app.get("/health")
