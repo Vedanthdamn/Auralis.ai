@@ -2,13 +2,19 @@ import { motion } from 'framer-motion'
 import ScoreDisplay from './ScoreDisplay'
 import TelemetryCharts from './TelemetryCharts'
 import FeedbackPanel from './FeedbackPanel'
-import StatsCards from './StatsCards'
+import RealTimeMetrics from './RealTimeMetrics'
 
 function Dashboard({ drivingData, score, feedback }) {
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <StatsCards drivingData={drivingData} />
+      {/* Real-time Metrics Cards - NEW */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <RealTimeMetrics drivingData={drivingData} />
+      </motion.div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Score Display - Takes 1 column */}
