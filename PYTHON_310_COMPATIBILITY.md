@@ -21,6 +21,7 @@ async with asyncio.timeout(2.0):
 async def _acquire_and_calculate_score(semaphore, ml_service, data):
     """Helper function to acquire semaphore and calculate score"""
     async with semaphore:
+        # Note: calculate_score() is a synchronous method
         score = ml_service.calculate_score(data)
         return score
 
