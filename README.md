@@ -113,10 +113,17 @@ Perfect for:
 ## 🏗️ Architecture
 
 ```
-┌─────────────────┐     WebSocket      ┌──────────────────┐
-│  React Frontend │◄──────────────────►│  FastAPI Backend │
-│  (Port 3000)    │                    │   (Port 8000)    │
-└─────────────────┘                    └──────────────────┘
+┌──────────────────┐   /ws/personal    ┌──────────────────┐
+│ Personal         │◄─────────────────►│                  │
+│ Dashboard        │                    │                  │
+│ (Port 3000)      │                    │                  │
+└──────────────────┘                    │  FastAPI Backend │
+                                        │   (Port 8000)    │
+┌──────────────────┐   /ws/fleet       │                  │
+│ Fleet            │◄─────────────────►│  - /ws/personal  │
+│ Dashboard        │                    │  - /ws/fleet     │
+│ (Port 3000)      │                    │  - /ws (legacy)  │
+└──────────────────┘                    └──────────────────┘
                                               │
                     ┌─────────────────────────┼─────────────────────┐
                     │                         │                     │
@@ -126,11 +133,18 @@ Perfect for:
             └──────────────┘         └─────────────────┘   └──────────────┘
                     ▲
                     │
-            ┌───────┴──────┐
-            │  Simulator   │
-            │ (Test Data)  │
-            └──────────────┘
+            ┌───────┴──────────┐
+            │  Simulators      │
+            │  --mode personal │
+            │  --mode fleet    │
+            └──────────────────┘
 ```
+
+**Key Architecture Features:**
+- **Parallel WebSocket Streams**: Separate endpoints ensure no data crosstalk
+- **Independent Connection Pools**: Personal and fleet connections are isolated
+- **Automatic Routing**: Backend routes data based on simulation mode
+- **Backward Compatible**: Legacy `/ws` endpoint still supported
 
 ---
 
@@ -280,23 +294,27 @@ This will create 5 sample drivers with 10 trips each to populate the fleet dashb
 
 ## 🚗 Simulation Modes
 
-DriveMind.ai now supports two independent simulation modes that can run concurrently:
+DriveMind.ai now supports two independent simulation modes that can run concurrently with **parallel WebSocket streaming**:
 
 ### Personal Mode (`--mode personal`)
 - **Purpose**: Individual driver testing and training
 - **Use Case**: Personal driving improvement, training scenarios
 - **Icon**: 🚗
-- **WebSocket Channel**: Broadcasts with `mode: "personal"`
+- **WebSocket Endpoint**: `ws://localhost:8000/ws/personal`
+- **Dashboard URL**: `http://localhost:3000/dashboard`
 
 ### Fleet Mode (`--mode fleet`)
 - **Purpose**: Fleet management and multi-vehicle monitoring
 - **Use Case**: Fleet operators (Uber, Ola, delivery services)
 - **Icon**: 🚕
-- **WebSocket Channel**: Broadcasts with `mode: "fleet"`
+- **WebSocket Endpoint**: `ws://localhost:8000/ws/fleet`
+- **Dashboard URL**: `http://localhost:3000/dashboard/fleet`
 
 ### Key Features
+- ✅ **Parallel WebSocket Streaming**: Dedicated endpoints for each dashboard
 - ✅ **Independent Sessions**: Each mode maintains its own session ID and statistics
 - ✅ **Concurrent Execution**: Run both modes simultaneously without interference
+- ✅ **No Data Crosstalk**: Personal and fleet data streams are completely isolated
 - ✅ **Retry Mechanism**: Automatic retry with exponential backoff on failures
 - ✅ **High-Frequency Updates**: Support for 1-second update intervals
 - ✅ **Concurrency Control**: Backend handles up to 10 simultaneous requests
@@ -304,32 +322,43 @@ DriveMind.ai now supports two independent simulation modes that can run concurre
 
 ---
 
-You can run both modes simultaneously in different terminals:
+### Running Both Dashboards in Parallel
+
+You can run both personal and fleet dashboards simultaneously with live data streaming to each:
 
 ```bash
 # Terminal 1: Backend
 cd backend
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# Terminal 2: Personal Simulation
+# Terminal 2: Frontend
+cd frontend
+npm run dev
+
+# Terminal 3: Personal Simulation
 cd simulation
 python drive_simulator.py --duration 600 --interval 1.0 --mode personal
 
-# Terminal 3: Fleet Simulation
+# Terminal 4: Fleet Simulation
 cd simulation
 python drive_simulator.py --duration 600 --interval 1.0 --mode fleet
-
-# Terminal 4: Frontend
-cd frontend
-npm run dev
 ```
 
+**How It Works:**
+- **Separate WebSocket Endpoints**: Personal dashboard connects to `/ws/personal`, fleet to `/ws/fleet`
+- **Independent Data Streams**: Each simulator broadcasts to its respective endpoint
+- **No Interference**: Both dashboards receive real-time data simultaneously
+- **Concurrent Sessions**: Each simulator runs independently with its own session ID
+- **Automatic Routing**: Backend automatically routes data based on `simulation_mode` field
+
 **Features:**
-- Each simulator runs independently with its own session ID
-- Retry mechanism handles temporary network issues or backend overload
-- Both modes can post data at 1-second intervals without timing out
-- Separate session tracking ensures scores don't interfere with each other
-- Backend handles concurrent requests using semaphore-based rate limiting (up to 10 concurrent requests)
+- ✅ Open both dashboards in different browser tabs - both stay live simultaneously
+- ✅ Each simulator runs independently with its own session ID
+- ✅ Retry mechanism handles temporary network issues or backend overload
+- ✅ Both modes can post data at 1-second intervals without timing out
+- ✅ Separate session tracking ensures scores don't interfere with each other
+- ✅ Backend handles concurrent requests using semaphore-based rate limiting (up to 10 concurrent requests)
+- ✅ WebSocket connections are completely isolated - no data crosstalk
 
 ### Simulator Options
 
@@ -552,8 +581,11 @@ The backend now includes robust error handling for common issues:
 
 ### WebSocket Enhancements
 
+- **Parallel Streaming**: Separate endpoints (`/ws/personal` and `/ws/fleet`) for independent data streams
+- **Dedicated Connection Pools**: Personal and fleet connections are managed separately
 - **Concurrent Client Support**: Handle multiple dashboards simultaneously
-- **Mode Filtering**: Broadcasts include `mode` field for filtering by personal/fleet
+- **Automatic Routing**: Broadcasts are routed based on `mode` field to correct endpoint
+- **Backward Compatibility**: Legacy `/ws` endpoint still works (routes to personal)
 - **Automatic Cleanup**: Disconnected clients are automatically removed
 - **Error Resilience**: Failed broadcasts don't crash the connection manager
 
@@ -568,7 +600,10 @@ All `/api/driving_data` responses now include:
 }
 ```
 
-WebSocket broadcasts include mode context:
+WebSocket broadcasts are routed to appropriate endpoints:
+- Personal mode data (`mode: "personal"`) → `/ws/personal`
+- Fleet mode data (`mode: "fleet"`) → `/ws/fleet`
+
 ```json
 {
   "type": "driving_data",
@@ -582,6 +617,11 @@ WebSocket broadcasts include mode context:
   }
 }
 ```
+
+**WebSocket Endpoints:**
+- `/ws/personal` - For personal dashboard (individual driver)
+- `/ws/fleet` - For fleet dashboard (multiple drivers/vehicles)
+- `/ws` - Legacy endpoint (backward compatibility, routes to personal)
 
 Partial response when backend is overloaded:
 ```json
