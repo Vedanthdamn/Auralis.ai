@@ -3,7 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { motion } from 'framer-motion'
 import Dashboard from './components/Dashboard'
 import FleetDashboard from './components/FleetDashboard'
+import FleetMap from './components/FleetMap'
 import Header from './components/Header'
+import Sidebar from './components/Sidebar'
 import Welcome from './components/Welcome'
 import Login from './components/Login'
 import { useDarkMode } from './hooks/useDarkMode'
@@ -15,6 +17,7 @@ function DashboardPage() {
   const [score, setScore] = useState(null)
   const [feedback, setFeedback] = useState('')
   const [isConnected, setIsConnected] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   
   // WebSocket connection for personal dashboard - dedicated endpoint
   const { lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws/personal')
@@ -43,12 +46,14 @@ function DashboardPage() {
   
   return (
     <div className={darkMode ? 'dark' : ''}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="min-h-screen bg-gray-50 dark:bg-tesla-darker transition-colors duration-200">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <Header 
           darkMode={darkMode} 
           setDarkMode={setDarkMode}
           isConnected={isConnected}
           showFleetLink={true}
+          onMenuClick={() => setSidebarOpen(true)}
         />
         
         <motion.main
@@ -72,6 +77,7 @@ function FleetDashboardPage() {
   const [darkMode, setDarkMode] = useDarkMode()
   const [fleetData, setFleetData] = useState(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   
   // WebSocket connection for fleet dashboard - dedicated endpoint
   const { lastMessage, connectionStatus } = useWebSocket('ws://localhost:8000/ws/fleet')
@@ -96,12 +102,14 @@ function FleetDashboardPage() {
   
   return (
     <div className={darkMode ? 'dark' : ''}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="min-h-screen bg-gray-50 dark:bg-tesla-darker transition-colors duration-200">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <Header 
           darkMode={darkMode} 
           setDarkMode={setDarkMode}
           isConnected={isConnected}
           showFleetLink={true}
+          onMenuClick={() => setSidebarOpen(true)}
         />
         
         <motion.main
@@ -111,6 +119,33 @@ function FleetDashboardPage() {
           className="container mx-auto px-4 py-8"
         >
           <FleetDashboard fleetData={fleetData} />
+        </motion.main>
+      </div>
+    </div>
+  )
+}
+
+function FleetMapPage() {
+  const [darkMode, setDarkMode] = useDarkMode()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  
+  return (
+    <div className={darkMode ? 'dark' : ''}>
+      <div className="min-h-screen bg-gray-50 dark:bg-tesla-darker transition-colors duration-200">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Header 
+          darkMode={darkMode} 
+          setDarkMode={setDarkMode}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
+        
+        <motion.main
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="container mx-auto px-4 py-8"
+        >
+          <FleetMap />
         </motion.main>
       </div>
     </div>
@@ -128,6 +163,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/dashboard/fleet" element={<FleetDashboardPage />} />
+          <Route path="/dashboard/map" element={<FleetMapPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

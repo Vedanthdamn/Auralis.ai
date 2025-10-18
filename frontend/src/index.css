@@ -1,27 +1,138 @@
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200;
+    @apply bg-gray-50 dark:bg-tesla-darker text-gray-900 dark:text-gray-100 transition-colors duration-200;
+  }
+  
+  /* Ambient background animation for dark mode */
+  body.dark {
+    background: linear-gradient(135deg, #050505 0%, #0a0a0a 50%, #0f0f1a 100%);
+    background-size: 200% 200%;
+    animation: ambientShift 15s ease infinite;
+  }
+  
+  @keyframes ambientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
   }
 }
 
 @layer components {
+  /* Tesla-style glass card */
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-tesla-gray/40 backdrop-blur-md rounded-2xl shadow-xl p-6 
+           border border-gray-200 dark:border-tesla-border/50 
+           transition-all duration-300 hover:shadow-2xl;
   }
   
+  .card-glass {
+    @apply bg-white/80 dark:bg-tesla-gray/30 backdrop-blur-xl rounded-2xl shadow-2xl p-6
+           border border-gray-200/50 dark:border-tesla-border/30
+           transition-all duration-300 hover:border-tesla-accent/50;
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  }
+  
+  .card-glow {
+    @apply card-glass relative overflow-hidden;
+    box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.1);
+  }
+  
+  .card-glow::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-500;
+    background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%);
+  }
+  
+  .card-glow:hover::before {
+    @apply opacity-100;
+  }
+  
+  /* Glowing borders */
+  .border-glow {
+    @apply border border-tesla-accent/50;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3), inset 0 0 10px rgba(59, 130, 246, 0.1);
+  }
+  
+  .border-glow-success {
+    @apply border border-tesla-success/50;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3), inset 0 0 10px rgba(16, 185, 129, 0.1);
+  }
+  
+  .border-glow-warning {
+    @apply border border-tesla-warning/50;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3), inset 0 0 10px rgba(245, 158, 11, 0.1);
+  }
+  
+  .border-glow-danger {
+    @apply border border-tesla-danger/50;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3), inset 0 0 10px rgba(239, 68, 68, 0.1);
+  }
+  
+  /* Buttons */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95;
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-200 active:scale-95;
   }
   
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white;
+    @apply bg-tesla-accent hover:bg-tesla-accentHover text-white shadow-lg 
+           hover:shadow-tesla-accent/50;
   }
   
   .btn-secondary {
-    @apply bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100;
+    @apply bg-gray-200 dark:bg-tesla-gray/60 dark:backdrop-blur-md
+           hover:bg-gray-300 dark:hover:bg-tesla-gray/80 
+           text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-tesla-border/50;
+  }
+  
+  /* Metric cards with Tesla style */
+  .metric-card {
+    @apply card-glass flex flex-col items-center justify-center p-4 min-h-[120px]
+           hover:scale-105 transition-transform duration-300;
+  }
+  
+  .metric-value {
+    @apply text-3xl font-bold bg-gradient-to-r from-tesla-accent to-tesla-cyan 
+           bg-clip-text text-transparent;
+  }
+  
+  .metric-label {
+    @apply text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider mt-2;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    @apply fixed left-0 top-0 h-full w-64 bg-white/95 dark:bg-tesla-gray/95 
+           backdrop-blur-xl border-r border-gray-200 dark:border-tesla-border/50
+           shadow-2xl z-50 transition-transform duration-300;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center space-x-3 px-6 py-4 
+           text-gray-700 dark:text-gray-300
+           hover:bg-gray-100 dark:hover:bg-tesla-border/30
+           hover:text-tesla-accent dark:hover:text-tesla-accent
+           transition-all duration-200 cursor-pointer;
+  }
+  
+  .sidebar-item.active {
+    @apply bg-tesla-accent/10 text-tesla-accent border-r-4 border-tesla-accent;
+  }
+  
+  /* Gauge container */
+  .gauge-container {
+    @apply relative w-full h-full flex items-center justify-center;
+  }
+  
+  /* Shimmer effect for loading states */
+  .shimmer {
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
   }
 }

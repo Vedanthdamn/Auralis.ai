@@ -1,6 +1,6 @@
-# DriveMind.ai 🚗
+# Auralis.ai 🚗
 
-**AI-Powered Driver Safety Scoring System**
+**AI-Powered Driver Safety Scoring System with Tesla-Style Real-Time Dashboard**
 
 Illuminating Safer Journeys with AI
 
@@ -8,6 +8,34 @@ Illuminating Safer Journeys with AI
 ![Python](https://img.shields.io/badge/python-3.13+-blue.svg)
 ![React](https://img.shields.io/badge/react-18.2+-61dafb.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg)
+
+---
+
+## 🎨 New Tesla-Style Dashboard
+
+Experience a completely revamped, futuristic dashboard inspired by Tesla and Lucid Motors. The new design features:
+
+- **Glass Morphism UI**: Dark, glassy aesthetic with smooth gradients and ambient animations
+- **Real-Time Metrics**: Live cards displaying Speed, Acceleration, Steering, Brake Force, and Risk Index
+- **Concurrent Dashboard Support**: Personal and Fleet dashboards run simultaneously without disconnection
+- **Interactive Sidebar**: Easy navigation between dashboards, logs, analytics, and settings
+- **Live Fleet Map**: Real-time vehicle tracking with Leaflet integration
+- **Dark/Light Mode**: Seamless theme switching with localStorage persistence
+- **Smooth Animations**: Framer Motion transitions for every interaction
+
+### Screenshots
+
+#### Personal Dashboard - Light Mode
+![Personal Dashboard Light](https://github.com/user-attachments/assets/75efe92b-86b1-4287-b2fa-110428a7d8aa)
+
+#### Personal Dashboard - Dark Mode (Tesla Style)
+![Personal Dashboard Dark](https://github.com/user-attachments/assets/2b8cb46a-db05-4a02-88d8-ef2b12662779)
+
+#### Navigation Sidebar
+![Sidebar Navigation](https://github.com/user-attachments/assets/d2a7c6db-00af-4340-aeee-ff8b250a642b)
+
+#### Live Fleet Map
+![Fleet Map](https://github.com/user-attachments/assets/11ac1e5d-de02-48c2-89ec-22749528d872)
 
 ---
 
@@ -63,24 +91,37 @@ Perfect for:
 
 ## ✨ Features
 
-### Personal Dashboard
-- 📊 Real-time charts for speed, acceleration, and braking
-- 🎯 Live driving score display with animated gauge
-- 🤖 AI-generated feedback panel
-- 🌓 Dark mode toggle with persistent preferences
-- 📱 Fully responsive design
-- ✨ Smooth animations with Framer Motion
-- 🎨 Beautiful UI with TailwindCSS
+### 🎨 Tesla-Style UI/UX (NEW!)
+- **Glass Morphism Design**: Dark, glassy cards with backdrop blur and gradient overlays
+- **Glowing Borders**: Animated neon-style borders that respond to interaction
+- **Ambient Background**: Smooth gradient animations creating a futuristic atmosphere
+- **Real-Time Metric Cards**: Five prominent cards showing Speed, Acceleration, Steering, Brake Force, and Risk Index
+- **Interactive Sidebar**: Slide-out navigation menu with smooth animations
+- **Responsive Design**: Optimized for mobile, tablet, and desktop (320px - 4K)
+- **Live Fleet Map**: Interactive map with Leaflet showing real-time vehicle locations
+- **Dark/Light Themes**: Seamless switching with system preference detection
+- **Smooth Transitions**: Framer Motion animations on every UI element
 
-### Fleet Dashboard (NEW!)
+### Personal Dashboard
+- 📊 Enhanced real-time charts with gradient fills and dark theme
+- 🎯 Circular gauge with glowing effects and animated progress
+- 💳 Real-time metric cards with status-based color coding
+- 🤖 AI-generated feedback panel with glass morphism
+- 🌓 Dark mode with ambient background animations
+- 📱 Fully responsive grid layout
+- ✨ Motion transitions on all interactions
+- 🎨 Professional Tesla-inspired design system
+
+### Fleet Dashboard
 - 🚕 Multi-driver/vehicle tracking for fleet operators
-- 🏆 Driver rankings and leaderboard
-- 📈 Fleet-level statistics and insights
+- 🗺️ **NEW**: Live interactive map with vehicle markers
+- 🏆 Driver rankings and leaderboard with enhanced visuals
+- 📈 Fleet-level statistics with gradient cards
 - 🤖 AI-powered per-driver feedback using Mistral 7B
-- 📊 Performance trends and comparisons
+- 📊 Performance trends with smooth area charts
 - 🎯 Identify top performers and drivers needing training
-- 🔄 Real-time data refresh (30s intervals)
-- 🌓 Full dark mode support
+- 🔄 Real-time WebSocket streaming for concurrent updates
+- 🌓 Full dark mode with glass morphism effects
 
 ### Backend (FastAPI)
 - 🚀 High-performance async API
@@ -209,6 +250,11 @@ cd frontend
 npm install
 ```
 
+**Note**: The frontend now includes additional dependencies for the Tesla-style UI:
+- `leaflet` and `react-leaflet` for live fleet maps
+- Enhanced Tailwind CSS configuration with glass morphism utilities
+- All dependencies are automatically installed with `npm install`
+
 ### 3. Backend Setup
 
 ```bash
@@ -292,9 +338,11 @@ http://localhost:3000/dashboard
 ```
 
 You should see:
-- Real-time telemetry charts updating
-- Live driving score
-- AI-generated feedback (if Ollama is configured)
+- **Real-time metric cards** displaying Speed, Acceleration, Steering, Brake Force, and Risk Index
+- **Animated telemetry charts** with gradient fills
+- **Circular driving score gauge** with glowing effects
+- **AI-generated feedback panel** (if Ollama is configured)
+- **Glass morphism UI** with smooth animations
 
 #### Fleet Dashboard
 For fleet operators managing multiple drivers:
@@ -307,6 +355,36 @@ You should see:
 - Driver rankings and leaderboard
 - AI-generated fleet insights
 - Individual driver performance cards
+
+#### Live Fleet Map (NEW!)
+View real-time vehicle locations on an interactive map:
+```
+http://localhost:3000/dashboard/map
+```
+
+You should see:
+- **Interactive Leaflet map** with vehicle markers
+- **Color-coded status indicators** (Active, Idle, Warning)
+- **Fleet summary statistics** at the bottom
+- **Real-time position updates** (mock data if no live feed)
+
+### 🎨 Navigating the New UI
+
+The Tesla-style dashboard includes several navigation options:
+
+1. **Sidebar Menu**: Click the hamburger icon (☰) in the top-left to open the sidebar
+   - Personal Dashboard
+   - Fleet Dashboard
+   - Live Map
+   - Activity Logs
+   - Analytics
+   - Settings
+
+2. **Top Navigation**: Quick-switch between Personal and Fleet dashboards using the buttons in the header
+
+3. **Dark/Light Mode**: Toggle theme using the sun/moon icon in the top-right
+
+4. **Responsive Design**: The UI automatically adapts to your screen size (mobile, tablet, desktop)
 
 **Note**: The fleet dashboard requires database setup and sample data. See [Fleet Dashboard Guide](docs/FLEET_DASHBOARD.md) for setup instructions.
 
