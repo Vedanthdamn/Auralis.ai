@@ -13,6 +13,23 @@ import uuid
 
 router = APIRouter()
 
+async def _acquire_and_calculate_score(semaphore, ml_service, data):
+    """Helper function to acquire semaphore and calculate score"""
+    async with semaphore:
+        # Calculate driving score with error handling
+        try:
+            score = ml_service.calculate_score(data)
+        except AttributeError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error calculating score: ML service not properly initialized - {str(e)}"
+            )
+        except Exception as e:
+            # Log error but continue with fallback score
+            print(f"Error calculating score: {e}")
+            score = 5.0  # Fallback score
+        return score
+
 @router.post("/driving_data", response_model=ScoreResponse)
 async def receive_driving_data(data: DrivingData, request: Request):
     """
@@ -34,21 +51,11 @@ async def receive_driving_data(data: DrivingData, request: Request):
         
         # Try to acquire semaphore with timeout
         try:
-            # Non-blocking acquire with asyncio timeout
-            async with asyncio.timeout(2.0):  # Wait max 2 seconds for slot
-                async with semaphore:
-                    # Calculate driving score with error handling
-                    try:
-                        score = ml_service.calculate_score(data)
-                    except AttributeError as e:
-                        raise HTTPException(
-                            status_code=500,
-                            detail=f"Error calculating score: ML service not properly initialized - {str(e)}"
-                        )
-                    except Exception as e:
-                        # Log error but continue with fallback score
-                        print(f"Error calculating score: {e}")
-                        score = 5.0  # Fallback score
+            # Non-blocking acquire with timeout using wait_for (Python 3.10 compatible)
+            score = await asyncio.wait_for(
+                _acquire_and_calculate_score(semaphore, ml_service, data),
+                timeout=2.0
+            )
                     
         except asyncio.TimeoutError:
             # Backend is too busy, return partial response
